@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+.key-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255,255,255,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: white;
+}
+
+
+
+.input {
+  @apply w-full p-3 rounded text-black;
+}
+
+.nav-btn {
+  @apply bg-black/30 p-3 rounded-full hover:bg-red-600 transition;
+}
+
+.choice-btn {
+  @apply bg-black/30 py-2 rounded hover:bg-red-600 transition;
+}
+
