@@ -1,16 +1,22 @@
 import axios from "axios";
 
 /* ================= AXIOS INSTANCE ================= */
-// const api = axios.create({
-//   baseURL: "http://localhost:9090/api",
-// });
 
+// ✅ LOCAL (development)
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+// ✅ PRODUCTION (use this when deploying)
+// const api = axios.create({
+//   baseURL: import.meta.env.VITE_API_URL,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
 
 
 /* ================= JWT INTERCEPTOR ================= */
@@ -31,11 +37,10 @@ api.interceptors.request.use(
 
 /* 🔔 Society Admin – VIEW notices (global + society) */
 export const getSocietyAdminNotices = (societyId, adminId) => {
-  return api.get(`/notices/society/${societyId}`, {
-    params: {
-      adminId,
-    },
-  });
+  // ✅ FIXED (path variable correct)
+  return api.get(
+    `/notices/society/${societyId}/societyAdminId/${adminId}`
+  );
 };
 
 
@@ -44,10 +49,8 @@ export const getSuperAdminNotices = (superAdminId) => {
   return api.get(`/notices/superAdminId/${superAdminId}`);
 };
 
-/* 📝 Super Admin – CREATE notice
-   ✔ Global notice
-   ✔ Society specific notice
-*/
+
+/* 📝 Super Admin – CREATE notice */
 export const createSuperAdminNotice = (
   superAdminId,
   dto,
@@ -66,9 +69,8 @@ export const createSuperAdminNotice = (
   });
 };
 
-/* 🗑 Super Admin – DELETE notice
-   ✔ Global / Society notice
-*/
+
+/* 🗑 Super Admin – DELETE notice */
 export const deleteSuperAdminNotice = (
   noticeId,
   superAdminId,
@@ -82,6 +84,7 @@ export const deleteSuperAdminNotice = (
     },
   });
 };
+
 
 /* ==================================================
    EXPORT AXIOS INSTANCE

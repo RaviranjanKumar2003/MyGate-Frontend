@@ -20,7 +20,7 @@ function Sash() {
   const [visitorCode, setVisitorCode] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const qrUrl = `http://localhost:9090/api/users/society/${SOCIETY_ID}/qr/${USER_ID}`;
+  const qrUrl = `http://localhost:8080/api/users/society/${SOCIETY_ID}/qr/${USER_ID}`;
 
   /* ================= FETCH USER DATA ================= */
 

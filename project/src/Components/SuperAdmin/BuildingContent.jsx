@@ -15,10 +15,10 @@ function BuildingContent({ society, onBack }) {
         // BUILDINGS
         const [activeRes, inactiveRes] = await Promise.all([
           axios.get(
-            `http://localhost:9090/api/societies/${society.id}/buildings`
+            `http://localhost:8080/api/societies/${society.id}/buildings`
           ),
           axios.get(
-            `http://localhost:9090/api/societies/${society.id}/buildings/inactive`
+            `http://localhost:8080/api/societies/${society.id}/buildings/inactive`
           ),
         ]);
 
@@ -35,13 +35,13 @@ function BuildingContent({ society, onBack }) {
         /* ===== FLOORS SUMMARY ===== */
         const floorPromises = activeBuildings.map((b) =>
           axios.get(
-            `http://localhost:9090/api/floors/society/${society.id}/building/${b.id}/summary`
+            `http://localhost:8080/api/floors/society/${society.id}/building/${b.id}/summary`
           )
         );
 
         const flatPromises = activeBuildings.map((b) =>
           axios.get(
-            `http://localhost:9090/api/flats/building/${b.id}`
+            `http://localhost:8080/api/flats/building/${b.id}`
           )
         );
 

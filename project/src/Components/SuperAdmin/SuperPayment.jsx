@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Plus, Send } from "lucide-react";
 
-const BASE_URL = "http://localhost:9090";
+const BASE_URL = "http://localhost:8080";
 
 export default function SuperPayment() {
   const [activeTab, setActiveTab] = useState("PENDING");

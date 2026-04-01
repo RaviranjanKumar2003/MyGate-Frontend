@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const USER_ID = localStorage.getItem("userId");
-const BASE_URL = "http://localhost:9090";
+const BASE_URL = "http://localhost:8080";
 
 export default function Payments() {
   const [summary, setSummary] = useState({

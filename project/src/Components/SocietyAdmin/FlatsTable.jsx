@@ -32,7 +32,7 @@ function StatusCards({ counts }) {
 
 /* ================= MAIN COMPONENT ================= */
 export default function FlatsOverview() {
-  const BASE_URL = "http://localhost:9090/api";
+  const BASE_URL = "http://localhost:8080/api";
   const SOCIETY_ID = Number(localStorage.getItem("societyId"));
   console.log(SOCIETY_ID);
   

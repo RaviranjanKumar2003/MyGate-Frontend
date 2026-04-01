@@ -15,7 +15,7 @@ const FLOOR_ID = localStorage.getItem("floorId");
 const FLAT_ID = localStorage.getItem("flatId");
 
 const IMAGE_BASE_URL =
-  "http://localhost:9090/api/visitors/image/get/visitor";
+  "http://localhost:8080/api/visitors/image/get/visitor";
 
 const STATUS_TABS = ["PENDING", "IN", "OUT", "REJECTED"];
 
@@ -31,7 +31,7 @@ export default function UserVisitor() {
     try {
       setLoading(true);
       const res = await axios.get(
-        `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/building/${BUILDING_ID}/floor/${FLOOR_ID}/flat/${FLAT_ID}/status/${status}`
+        `http://localhost:8080/api/visitors/society/${SOCIETY_ID}/building/${BUILDING_ID}/floor/${FLOOR_ID}/flat/${FLAT_ID}/status/${status}`
       );
       setVisitors(res.data || []);
     } catch {
@@ -50,7 +50,7 @@ export default function UserVisitor() {
     try {
       setActionLoading(visitorId);
       await axios.put(
-        `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/visitor/${visitorId}/status`,
+        `http://localhost:8080/api/visitors/society/${SOCIETY_ID}/visitor/${visitorId}/status`,
         { visitorStatus: newStatus }
       );
       fetchVisitors();

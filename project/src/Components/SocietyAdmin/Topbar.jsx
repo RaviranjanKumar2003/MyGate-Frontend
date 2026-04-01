@@ -29,7 +29,7 @@ export default function Topbar({ isSidebarOpen, toggleSidebar }) {
         if (!token) return;
 
         const res = await fetch(
-          `http://localhost:9090/api/society-admins/me`,
+          `http://localhost:8080/api/society-admins/me`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -59,7 +59,7 @@ export default function Topbar({ isSidebarOpen, toggleSidebar }) {
         if (!token) return;
 
         const res = await axios.get(
-          "http://localhost:9090/api/notifications/user",
+          "http://localhost:8080/api/notifications/user",
           {
             headers: {
               Authorization: `Bearer ${token}`,

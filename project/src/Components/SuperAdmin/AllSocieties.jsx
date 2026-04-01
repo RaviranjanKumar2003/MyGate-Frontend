@@ -13,8 +13,8 @@ function AllSocieties({ onViewDetails }) {
   const fetchSocieties = async () => {
     const url =
       activeTab === "ACTIVE"
-        ? "http://localhost:9090/api/societies"
-        : "http://localhost:9090/api/societies/inactive";
+        ? "http://localhost:8080/api/societies"
+        : "http://localhost:8080/api/societies/inactive";
 
     const res = await axios.get(url);
     setSocieties(Array.isArray(res.data) ? res.data : []);
@@ -28,7 +28,7 @@ function AllSocieties({ onViewDetails }) {
   /* ================= DELETE ================= */
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this society?")) return;
-    await axios.delete(`http://localhost:9090/api/societies/${id}`);
+    await axios.delete(`http://localhost:8080/api/societies/${id}`);
     fetchSocieties();
   };
 
@@ -36,7 +36,7 @@ function AllSocieties({ onViewDetails }) {
   const handleUpdate = async () => {
     try {
       await axios.put(
-        `http://localhost:9090/api/societies/${editSociety.id}`,
+        `http://localhost:8080/api/societies/${editSociety.id}`,
         editSociety
       );
       setEditSociety(null);

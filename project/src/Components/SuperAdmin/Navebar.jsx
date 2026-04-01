@@ -20,7 +20,7 @@ function Navebar({ onMenuClick }) {
 
       setLoading(true);
       const res = await axios.get(
-        "http://localhost:9090/api/notifications/user",
+        "http://localhost:8080/api/notifications/user",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -57,7 +57,7 @@ function Navebar({ onMenuClick }) {
     try {
       if (!n.read) {
         await axios.put(
-          `http://localhost:9090/api/notifications/${n.id}/read`,
+          `http://localhost:8080/api/notifications/${n.id}/read`,
           {},
           {
             headers: {
