@@ -87,7 +87,7 @@ export default function SocietySidebar({ open, onClose }) {
   const getProfileImage = (id) => {
   if (imagePreview) return imagePreview;
 
-  return `${api.defaults.baseURL}/society-admins/image/get/society-admin/${id}?t=${Date.now()}`;
+  return `${import.meta.env.VITE_API_URL}/society-admins/image/get/society-admin/${id}?t=${Date.now()}`;
 };
 
   // ================= LOGOUT =================
