@@ -11,12 +11,15 @@ function AllSocieties({ onViewDetails }) {
 
   /* ================= FETCH ================= */
   const fetchSocieties = async () => {
-    const url =
-      activeTab === "ACTIVE"
-        ? "http://localhost:8080/api/societies"
-        : "http://localhost:8080/api/societies/inactive";
+    const baseURL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-    const res = await axios.get(url);
+const url =
+  activeTab === "ACTIVE"
+    ? `${baseURL}/societies`
+    : `${baseURL}/societies/inactive`;
+
+const res = await axios.get(url);
     setSocieties(Array.isArray(res.data) ? res.data : []);
   };
 
