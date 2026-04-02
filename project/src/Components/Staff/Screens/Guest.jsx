@@ -49,65 +49,78 @@ export default function Guest() {
   /* ================= FETCH BUILDINGS ================= */
   useEffect(() => {
     if (step === 4) {
-      axios
-        .get(`http://localhost:9090/api/societies/${SOCIETY_ID}/buildings`)
-        .then(res => setBuildings(res.data.data || res.data));
-    }
+  const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+  axios
+    .get(`${baseURL}/societies/${SOCIETY_ID}/buildings`)
+    .then(res => setBuildings(res.data.data || res.data))
+    .catch(console.error);
+}
   }, [step]);
 
   /* ================= FETCH FLOORS ================= */
   useEffect(() => {
-    if (!buildingId) return;
-    axios
-      .get(`http://localhost:9090/api/floors/society/${SOCIETY_ID}/building/${buildingId}/get`)
-      .then(res => setFloors(res.data.data || res.data));
-  }, [buildingId]);
+  if (!buildingId) return;
+
+  const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+  axios
+    .get(`${baseURL}/floors/society/${SOCIETY_ID}/building/${buildingId}/get`)
+    .then(res => setFloors(res.data.data || res.data))
+    .catch(console.error);
+}, [buildingId]);
 
   /* ================= FETCH FLATS ================= */
   useEffect(() => {
-    if (!floorId) return;
-    axios
-      .get(`http://localhost:9090/api/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}`)
-      .then(res => setFlats(res.data.data || res.data));
-  }, [floorId]);
+  if (!floorId) return;
+
+  const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+  axios
+    .get(`${baseURL}/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}`)
+    .then(res => setFlats(res.data.data || res.data))
+    .catch(console.error);
+}, [floorId]);
 
   /* ================= SUBMIT ================= */
   const submitVisitor = async () => {
-    setLoading(true);
-    try {
-      // 1️⃣ CREATE VISITOR (JSON)
-      const res = await axios.post(
-        `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${flatId}`,
-        {
-          name,
-          mobileNumber,
-          visitorPurpose: "GUEST"
-        }
-      );
+  setLoading(true);
+  try {
+    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-      const visitorId = res.data?.data?.id || res.data?.id;
-
-      // 2️⃣ UPLOAD IMAGE (MULTIPART)
-      if (visitorId && imageFile) {
-        const fd = new FormData();
-        fd.append("image", imageFile);
-
-        await axios.post(
-          `http://localhost:9090/api/visitors/image/upload/${visitorId}`,
-          fd
-        );
+    // 1️⃣ CREATE VISITOR (JSON)
+    const res = await axios.post(
+      `${baseURL}/visitors/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${flatId}`,
+      {
+        name,
+        mobileNumber,
+        visitorPurpose: "GUEST"
       }
+    );
 
-      alert("Visitor Added Successfully ✅");
-      resetForm();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to add visitor ❌");
-    } finally {
-      setLoading(false);
+    const visitorId = res.data?.data?.id || res.data?.id;
+
+    // 2️⃣ UPLOAD IMAGE (MULTIPART)
+    if (visitorId && imageFile) {
+      const fd = new FormData();
+      fd.append("image", imageFile);
+
+      await axios.post(
+        `${baseURL}/visitors/image/upload/${visitorId}`,
+        fd,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
     }
-  };
 
+    alert("Visitor Added Successfully ✅");
+    resetForm();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to add visitor ❌");
+  } finally {
+    setLoading(false);
+  }
+};
   const resetForm = () => {
     setStep(1);
     setMobileNumber("");

@@ -89,7 +89,9 @@ function EHome() {
   const [loading, setLoading] = useState(false);
 
   const buyerId = Number(localStorage.getItem("userId"));
-  const BASE_URL = "http://localhost:8080/api/products";
+  const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/products`
+  : "http://localhost:8080/api/products";
 
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -228,7 +230,7 @@ const sendOffer = async (product) => {
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`flex-shrink-0 px-4 py-2 rounded-full border ${
+            className={`shrink-0 px-4 py-2 rounded-full border ${
               Number(selectedCategory) === Number(cat.id)
                 ? "bg-orange-500 text-white"
                 : "bg-white"

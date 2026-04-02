@@ -3,7 +3,8 @@ import axios from "axios";
 import { Search, User } from "lucide-react";
 
 const SOCIETY_ID = localStorage.getItem("societyId") || 26;
-const IMAGE_BASE_URL = "http://localhost:9090/api/visitors/image/get/visitor";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+const IMAGE_BASE_URL = `${BASE_URL}/visitors/image/get/visitor`;
 
 const TABS = ["WAITING", "INSIDE", "OUT", "REJECTED"];
 const STATUS_MAP = {
@@ -114,13 +115,15 @@ export default function Visitor() {
   }, []);
 
   const fetchVisitors = async () => {
-    try {
-      const res = await axios.get(`http://localhost:9090/api/visitors/society/${SOCIETY_ID}`);
-      setVisitors(res.data?.data || res.data || []);
-    } catch (err) {
-      console.error("Fetch visitors failed", err);
-    }
-  };
+  try {
+    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+    const res = await axios.get(`${BASE_URL}/visitors/society/${SOCIETY_ID}`);
+    setVisitors(res.data?.data || res.data || []);
+  } catch (err) {
+    console.error("Fetch visitors failed", err);
+  }
+};
 
   /* ================= FILTER VISITORS ================= */
   const filteredVisitors = visitors.filter((v) => {

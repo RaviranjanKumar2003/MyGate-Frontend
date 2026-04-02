@@ -31,6 +31,8 @@ import ChatAudioCall from "./ChatAudioCall";
 
 function CommunityChat({ userProfile }) {
 
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
   const SOCIETY_ID = localStorage.getItem("societyId");
   const USER_ID = Number(localStorage.getItem("userId"));
   const USER_NAME = localStorage.getItem("userName");
@@ -649,13 +651,14 @@ const uploadFile = async (file) => {
                     )}
                     <div className="flex">
                      {msg.text.startsWith("/uploads/") ? (
+                      
 
   <a
-    href={`http://localhost:9090/api/files/download/${msg.text.split("/").pop()}`}
-    target="_blank"
-    download
-    className="text-blue-200 underline"
-  >
+  href={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
+  target="_blank"
+  download
+  className="text-blue-200 underline"
+>
     📎 Download File
   </a>
 

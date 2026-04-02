@@ -48,12 +48,11 @@ export default function EnterCode() {
   try {
     setLoading(true);
 
-    await axios.post(
-      "http://localhost:9090/api/guard/verify",
-      {
-        code: enteredCode,
-      }
-    );
+    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+await axios.post(`${baseURL}/guard/verify`, {
+  code: enteredCode,
+});
 
     alert("✅ Entry Granted");
   } catch (err) {

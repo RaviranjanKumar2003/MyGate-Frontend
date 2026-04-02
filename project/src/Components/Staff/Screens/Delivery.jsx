@@ -26,7 +26,7 @@ const Back = memo(({ onClick }) => (
 const Card = memo(({ title, icon, children }) => (
   <div className="bg-white rounded-2xl shadow-xl p-6 animate-fadeIn">
     <div className="flex items-center gap-3 mb-4">
-      <div className="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white">
+      <div className="h-10 w-10 rounded-full bg-linear-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white">
         {icon}
       </div>
       <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
@@ -65,83 +65,93 @@ export default function Delivery() {
 
   /* ================= FETCH COMPANIES ================= */
   useEffect(() => {
-    if (step === 4) {
-      axios
-        .get("http://localhost:9090/api/companies/type/DELIVERY")
-        .then(res => setCompanies(res.data))
-        .catch(console.error);
-    }
-  }, [step]);
+  if (step === 4) {
+    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+    axios
+      .get(`${baseURL}/companies/type/DELIVERY`)
+      .then(res => setCompanies(res.data))
+      .catch(console.error);
+  }
+}, [step]);
 
   /* ================= FETCH BUILDINGS ================= */
   useEffect(() => {
-    if (step === 6) {
-      axios
-        .get(`http://localhost:9090/api/societies/${SOCIETY_ID}/buildings`)
-        .then(res => setBuildings(res.data.data || res.data))
-        .catch(console.error);
-    }
-  }, [step]);
+  if (step === 6) {
+    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+    axios
+      .get(`${baseURL}/societies/${SOCIETY_ID}/buildings`)
+      .then(res => setBuildings(res.data.data || res.data))
+      .catch(console.error);
+  }
+}, [step]);
 
   /* ================= FLOORS ================= */
   useEffect(() => {
     if (!buildingId) return;
 
-    axios
-      .get(
-        `http://localhost:9090/api/floors/society/${SOCIETY_ID}/building/${buildingId}/get`
-      )
-      .then(res => {
-        setFloors(res.data.data || res.data);
-        setStep(7);
-      })
-      .catch(console.error);
-  }, [buildingId]);
+     const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+  axios
+    .get(`${baseURL}/floors/society/${SOCIETY_ID}/building/${buildingId}/get`)
+    .then(res => {
+      setFloors(res.data.data || res.data);
+      setStep(7);
+    })
+    .catch(console.error);
+}, [buildingId]);
 
   /* ================= FLATS ================= */
   useEffect(() => {
-    if (!floorId) return;
+  if (!floorId) return;
 
-    axios
-      .get(
-        `http://localhost:9090/api/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}`
-      )
-      .then(res => {
-        setFlats(res.data.data || res.data);
-        setStep(8);
-      })
-      .catch(console.error);
-  }, [floorId]);
+  const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+  axios
+    .get(
+      `${baseURL}/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}`
+    )
+    .then(res => {
+      setFlats(res.data.data || res.data);
+      setStep(8);
+    })
+    .catch(console.error);
+}, [floorId]);
 
   /* ================= SUBMIT ================= */
   const submitDelivery = async () => {
     setLoading(true);
     try {
       /* 1️⃣ CREATE VISITOR */
-      const res = await axios.post(
-        `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${flatId}`,
-        {
-          name,
-          mobileNumber,
-          visitorPurpose: "DELIVERY",
-          companyId,
-          vehicleNumber
-        }
-      );
+      const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const res = await axios.post(
+  `${baseURL}/visitors/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${flatId}`,
+  {
+    name,
+    mobileNumber,
+    visitorPurpose: "DELIVERY",
+    companyId,
+    vehicleNumber
+  }
+);
 
       const visitorId = res.data?.data?.id || res.data?.id;
 
       /* 2️⃣ UPLOAD IMAGE */
       if (imageFile && visitorId) {
-        const imgForm = new FormData();
-        imgForm.append("image", imageFile);
+  const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-        await axios.post(
-          `http://localhost:9090/api/visitors/image/upload/${visitorId}`,
-          imgForm,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      }
+  const imgForm = new FormData();
+  imgForm.append("image", imageFile);
+
+  await axios.post(
+    `${baseURL}/visitors/image/upload/${visitorId}`,
+    imgForm,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+}
 
       alert("Delivery Visitor Added ✅");
 
@@ -283,7 +293,7 @@ export default function Delivery() {
           >
             {c.logoUrl ? (
               <img
-                src={`http://localhost:9090/api/companies/image/get/company/${c.id}`}
+                src={`${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/companies/image/get/company/${c.id}`}
                 alt={c.name}
                 className="h-12 w-12 object-contain bg-white rounded"/>
             ) : (

@@ -40,14 +40,17 @@ function GuardDashboard({ activeTab, setActiveTab}) {
 
   const fetchVisitorCount = async () => {
     try {
-      const [pendingRes, inRes] = await Promise.all([
-        axios.get(
-          `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/status/PENDING`
-        ),
-        axios.get(
-          `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/status/IN`
-        )
-      ]);
+      const baseURL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const [pendingRes, inRes] = await Promise.all([
+  axios.get(
+    `${baseURL}/visitors/society/${SOCIETY_ID}/status/PENDING`
+  ),
+  axios.get(
+    `${baseURL}/visitors/society/${SOCIETY_ID}/status/IN`
+  ),
+]);
 
       const safeLength = (res) =>
         Array.isArray(res?.data?.data)
@@ -69,9 +72,12 @@ function GuardDashboard({ activeTab, setActiveTab}) {
   /* ================= NOTICE COUNT ================= */
   const fetchNoticeCount = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:9090/api/notices/society/${SOCIETY_ID}/staff/${STAFF_ID}`
-      );
+      const baseURL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const res = await axios.get(
+  `${baseURL}/notices/society/${SOCIETY_ID}/staff/${STAFF_ID}`
+);
       setNoticeCount(Array.isArray(res.data) ? res.data.length : 0);
     } catch (err) {
       console.error("Notice count fetch failed", err);
@@ -82,9 +88,12 @@ function GuardDashboard({ activeTab, setActiveTab}) {
   /* ================= FREQUENT VISITOR COUNT ================= */
 const fetchFreqCount = async () => {
   try {
-    const res = await axios.get(
-      `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/visitorType/FREQUENT`
-    );
+    const baseURL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const res = await axios.get(
+  `${baseURL}/visitors/society/${SOCIETY_ID}/visitorType/FREQUENT`
+);
 
     const count = Array.isArray(res?.data?.data)
       ? res.data.data.length

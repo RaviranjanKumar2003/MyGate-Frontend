@@ -26,7 +26,7 @@ const Back = memo(({ onClick }) => (
 const Card = memo(({ title, icon, children }) => (
   <div className="bg-white rounded-2xl shadow-xl p-6">
     <div className="flex items-center gap-3 mb-4">
-      <div className="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white">
+      <div className="h-10 w-10 rounded-full bg-linear-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white">
         {icon}
       </div>
       <h2 className="text-lg font-semibold">{title}</h2>
@@ -63,75 +63,97 @@ export default function Cab() {
 
   /* ================= FETCH CAB COMPANIES ================= */
   useEffect(() => {
-    if (step === 3) {
-      axios
-        .get("http://localhost:9090/api/companies/type/CAB")
-        .then(res => setCompanies(res.data))
-        .catch(console.error);
-    }
-  }, [step]);
+  if (step === 3) {
+    const baseURL =
+      import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+    axios
+      .get(`${baseURL}/companies/type/CAB`)
+      .then(res => setCompanies(res.data))
+      .catch(console.error);
+  }
+}, [step]);
 
   /* ================= FETCH BUILDINGS ================= */
   useEffect(() => {
-    if (step === 6) {
-      axios
-        .get(`http://localhost:9090/api/societies/${SOCIETY_ID}/buildings`)
-        .then(res => setBuildings(res.data.data || res.data))
-        .catch(console.error);
-    }
-  }, [step]);
+  if (step === 6) {
+    const baseURL =
+      import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+    axios
+      .get(`${baseURL}/societies/${SOCIETY_ID}/buildings`)
+      .then(res => setBuildings(res.data.data || res.data))
+      .catch(console.error);
+  }
+}, [step]);
 
   /* ================= FETCH FLOORS ================= */
   useEffect(() => {
-    if (!buildingId) return;
-    axios
-      .get(
-        `http://localhost:9090/api/floors/society/${SOCIETY_ID}/building/${buildingId}/get`
-      )
-      .then(res => setFloors(res.data.data || res.data))
-      .catch(console.error);
-  }, [buildingId]);
+  if (!buildingId) return;
+
+  const baseURL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+  axios
+    .get(
+      `${baseURL}/floors/society/${SOCIETY_ID}/building/${buildingId}/get`
+    )
+    .then(res => setFloors(res.data.data || res.data))
+    .catch(console.error);
+}, [buildingId]);
 
   /* ================= FETCH FLATS ================= */
   useEffect(() => {
-    if (!floorId) return;
-    axios
-      .get(
-        `http://localhost:9090/api/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}`
-      )
-      .then(res => setFlats(res.data.data || res.data))
-      .catch(console.error);
-  }, [floorId]);
+  if (!floorId) return;
+
+  const baseURL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+  axios
+    .get(
+      `${baseURL}/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}`
+    )
+    .then(res => setFlats(res.data.data || res.data))
+    .catch(console.error);
+}, [floorId]);
 
   /* ================= SUBMIT ================= */
   const submitCab = async () => {
     setLoading(true);
     try {
       // 1️⃣ Create Visitor
-      const res = await axios.post(
-        `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${flatId}`,
-        {
-          name,
-          mobileNumber,
-          visitorPurpose: "CAB",
-          companyId,
-          vehicleNumber
-        }
-      );
+      const baseURL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const res = await axios.post(
+  `${baseURL}/visitors/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${flatId}`,
+  {
+    name,
+    mobileNumber,
+    visitorPurpose: "CAB",
+    companyId,
+    vehicleNumber
+  }
+);
 
       const visitorId = res.data?.data?.id || res.data?.id;
 
       // 2️⃣ Upload Image
       if (imageFile && visitorId) {
-        const formData = new FormData();
-        formData.append("image", imageFile);
+  const baseURL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-        await axios.post(
-          `http://localhost:9090/api/visitors/image/upload/${visitorId}`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      }
+  const formData = new FormData();
+  formData.append("image", imageFile);
+
+  await axios.post(
+    `${baseURL}/visitors/image/upload/${visitorId}`,
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
+}
 
       alert("Cab Visitor Added ✅");
 
@@ -201,49 +223,55 @@ export default function Cab() {
 
         {/* STEP 3 : COMPANY */}
         {step === 3 && (
-          <Card title="Select Cab Company" icon={<Building2 size={18} />}>
-            <Back onClick={() => setStep(2)} />
+  <Card title="Select Cab Company" icon={<Building2 size={18} />}>
+    <Back onClick={() => setStep(2)} />
 
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-3 text-gray-400" size={18} />
-              <input
-                value={companySearch}
-                onChange={e => setCompanySearch(e.target.value)}
-                className="w-full pl-10 p-3 border rounded-xl"
-                placeholder="Search cab company"
-              />
-            </div>
+    <div className="relative mb-4">
+      <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+      <input
+        value={companySearch}
+        onChange={e => setCompanySearch(e.target.value)}
+        className="w-full pl-10 p-3 border rounded-xl"
+        placeholder="Search cab company"
+      />
+    </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              {companies
-                .filter(c =>
-                  c.name.toLowerCase().includes(companySearch.toLowerCase())
-                )
-                .map(c => (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      setCompanyId(c.id);
-                      setStep(4);
-                    }}
-                    className="p-3 border rounded-xl hover:bg-indigo-600 hover:text-white text-sm"
-                  >
-                    {c.logoUrl ? (
-              <img
-                src={`http://localhost:9090/api/companies/image/get/company/${c.id}`}
-                alt={c.name}
-                className="h-12 w-12 object-contain bg-white rounded ml-3"/>
-            ) : (
-              <div className="h-12 w-12 ml-3 flex items-center justify-center bg-gray-200 rounded text-xs text-gray-600">
-                No Logo
-              </div>
-            )}
-                    {c.name}
-                  </button>
-                ))}
-            </div>
-          </Card>
-        )}
+    <div className="grid grid-cols-3 gap-3">
+      {companies
+        .filter(c =>
+          c.name.toLowerCase().includes(companySearch.toLowerCase())
+        )
+        .map(c => {
+          const baseURL =
+            import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+          return (
+            <button
+              key={c.id}
+              onClick={() => {
+                setCompanyId(c.id);
+                setStep(4);
+              }}
+              className="p-3 border rounded-xl hover:bg-indigo-600 hover:text-white text-sm"
+            >
+              {c.logoUrl ? (
+                <img
+                  src={`${baseURL}/companies/image/get/company/${c.id}?t=${Date.now()}`}
+                  alt={c.name}
+                  className="h-12 w-12 object-contain bg-white rounded ml-3"
+                />
+              ) : (
+                <div className="h-12 w-12 ml-3 flex items-center justify-center bg-gray-200 rounded text-xs text-gray-600">
+                  No Logo
+                </div>
+              )}
+              <span className="ml-2">{c.name}</span>
+            </button>
+          );
+        })}
+    </div>
+  </Card>
+)}
 
         {/* STEP 4 : VEHICLE */}
         {step === 4 && (

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Plus, Send } from "lucide-react";
 
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
 export default function SuperPayment() {
   const [activeTab, setActiveTab] = useState("PENDING");

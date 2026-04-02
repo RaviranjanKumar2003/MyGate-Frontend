@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import api from "../../../api/axios";
 
 function BuyModal({ product, onClose }) {
+
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
   const buyerId = Number(localStorage.getItem("userId"));
 
   const [quantity, setQuantity] = useState(1);
@@ -49,6 +52,7 @@ function BuyModal({ product, onClose }) {
     }
   };
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     fetchAddresses();
   }, []);
@@ -165,12 +169,13 @@ function BuyModal({ product, onClose }) {
 
         {/* ✅ IMAGE SLIDER */}
         <div className="relative">
+          
           <img
             src={
-              product.images?.length > 0
-                ? `http://localhost:8080/api/products/image/get/product/${product.id}/${product.images[currentImage]}`
-                : "https://via.placeholder.com/300"
-            }
+    product.images?.length > 0
+      ? `${BASE_URL}/products/image/get/product/${product.id}/${product.images[currentImage]}`
+      : "https://via.placeholder.com/300"
+  }
             className="w-full h-40 object-cover rounded mb-2"
           />
 

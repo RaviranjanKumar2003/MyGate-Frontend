@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import React, { useRef, useState } from "react";
 import {
   FileText,
@@ -47,6 +48,7 @@ function ChatDocument({ onFileSelect, close }) {
 
       }, 100);
 
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
 
       alert("Camera access denied");

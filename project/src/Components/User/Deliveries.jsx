@@ -7,8 +7,9 @@ const BUILDING_ID = localStorage.getItem("buildingId");
 const FLOOR_ID = localStorage.getItem("floorId");
 const FLAT_ID = localStorage.getItem("flatId");
 
-const IMAGE_BASE_URL =
-  "http://localhost:8080/api/visitors/image/get/visitor";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const IMAGE_BASE_URL = `${BASE_URL}/visitors/image/get/visitor`;
 
 /* ================= STATUS TABS ================= */
 const STATUS_TABS = ["PENDING", "IN", "OUT", "REJECTED"];
@@ -24,9 +25,11 @@ export default function UserDelivery() {
   const fetchVisitors = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(
-        `http://localhost:8080/api/visitors/society/${SOCIETY_ID}/building/${BUILDING_ID}/floor/${FLOOR_ID}/flat/${FLAT_ID}/status/${status}`
-      );
+      const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const res = await axios.get(
+  `${BASE_URL}/visitors/society/${SOCIETY_ID}/building/${BUILDING_ID}/floor/${FLOOR_ID}/flat/${FLAT_ID}/status/${status}`
+);
       setVisitors(res.data || []);
     } catch {
       setVisitors([]);
@@ -43,10 +46,12 @@ export default function UserDelivery() {
   const updateVisitorStatus = async (visitorId, newStatus) => {
     try {
       setActionLoading(visitorId);
-      await axios.put(
-        `http://localhost:8080/api/visitors/society/${SOCIETY_ID}/visitor/${visitorId}/status`,
-        { visitorStatus: newStatus }
-      );
+      const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+await axios.put(
+  `${BASE_URL}/visitors/society/${SOCIETY_ID}/visitor/${visitorId}/status`,
+  { visitorStatus: newStatus }
+);
       fetchVisitors();
     } catch {
       alert("Failed to update status");

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const USER_ID = localStorage.getItem("userId");
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export default function Payments() {
   const [summary, setSummary] = useState({
@@ -312,103 +312,3 @@ function OptionCard({ name, logo, onClick }) {
   );
 }
 
-
-
-
-
-
-
-
-// import React, { useState } from "react";
-// import { ChevronDown } from "lucide-react";
-
-// export default function Payments() {
-//   const [showOptions, setShowOptions] = useState(false);
-
-//   return (
-//     <div className="min-h-screen bg-gray-100 p-4 flex justify-center">
-//       <div className="w-full max-w-md space-y-4">
-
-//         {/* ================= TOP SUMMARY ================= */}
-//         <div className="bg-white rounded-xl shadow p-4 space-y-3">
-//           <div className="flex justify-between text-center">
-//             <div>
-//               <p className="text-gray-400 text-sm">Dues</p>
-//               <p className="text-red-500 font-bold text-lg">₹ 6,450.00</p>
-//             </div>
-//             <div>
-//               <p className="text-gray-400 text-sm">Deposit</p>
-//               <p className="text-green-500 font-bold text-lg">0</p>
-//             </div>
-//             <div>
-//               <p className="text-gray-400 text-sm">Total Advance</p>
-//               <p className="text-green-500 font-bold text-lg">0</p>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* ================= YEAR + STATUS FILTER ================= */}
-//         <div className="flex justify-between items-center">
-//           <button className="bg-red-500 text-white px-4 py-1 rounded-full flex items-center gap-2 text-sm">
-//             2022-2023 <ChevronDown size={16} />
-//           </button>
-
-//           <button className="text-gray-500 text-sm flex items-center gap-1">
-//             STATUS <ChevronDown size={16} />
-//           </button>
-//         </div>
-
-//         {/* ================= MAINTENANCE CARD ================= */}
-//         <div className="bg-white rounded-xl shadow p-4 space-y-3">
-
-//           <h2 className="font-semibold text-gray-800">
-//             Monthly Maintenance Charge
-//           </h2>
-
-//           <div className="flex items-center gap-2">
-//             <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full font-medium">
-//               NEW
-//             </span>
-//             <p className="text-gray-400 text-sm">01 AUG 2022</p>
-//           </div>
-
-//           <p className="text-xl font-bold text-gray-800">₹ 2150.00</p>
-
-//           <p className="text-gray-500 text-sm">
-//             Due date 05 Aug 2022
-//           </p>
-
-//           {/* ================= ACTION BUTTONS ================= */}
-//           <div className="flex gap-3 pt-2">
-//             <button className="flex-1 border border-gray-300 text-gray-600 py-2 rounded-lg font-medium hover:bg-gray-100 transition">
-//               I have Paid
-//             </button>
-
-//             <button
-//               onClick={() => setShowOptions(!showOptions)}
-//               className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition"
-//             >
-//               Pay now
-//             </button>
-//           </div>
-
-//           {/* ================= PAYMENT OPTIONS ================= */}
-//           {showOptions && (
-//             <div className="mt-3 space-y-2 border-t pt-3">
-//               {["UPI", "Debit Card", "Credit Card", "Net Banking"].map(
-//                 (method) => (
-//                   <button
-//                     key={method}
-//                     className="w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100"
-//                   >
-//                     {method}
-//                   </button>
-//                 )
-//               )}
-//             </div>
-//           )}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }

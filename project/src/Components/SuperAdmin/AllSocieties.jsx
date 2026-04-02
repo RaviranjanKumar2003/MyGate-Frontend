@@ -11,17 +11,20 @@ function AllSocieties({ onViewDetails }) {
 
   /* ================= FETCH ================= */
   const fetchSocieties = async () => {
-    const baseURL =
-      import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  try {
+    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
     const url =
       activeTab === "ACTIVE"
-        ? `${baseURL}/societies`
-        : `${baseURL}/societies/inactive`;
+        ? `${BASE_URL}/societies`
+        : `${BASE_URL}/societies/inactive`;
 
     const res = await axios.get(url);
-      setSocieties(Array.isArray(res.data) ? res.data : []);
-  };
+    setSocieties(Array.isArray(res.data) ? res.data : []);
+  } catch (err) {
+    console.error("Failed to fetch societies", err);
+  }
+};
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

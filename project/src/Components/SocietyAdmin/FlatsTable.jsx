@@ -32,7 +32,8 @@ function StatusCards({ counts }) {
 
 /* ================= MAIN COMPONENT ================= */
 export default function FlatsOverview() {
-  const BASE_URL = "http://localhost:8080/api";
+  const BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
   const SOCIETY_ID = Number(localStorage.getItem("societyId"));
   console.log(SOCIETY_ID);
   

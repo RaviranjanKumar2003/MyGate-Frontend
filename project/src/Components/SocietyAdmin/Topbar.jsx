@@ -28,14 +28,17 @@ export default function Topbar({ isSidebarOpen, toggleSidebar }) {
       try {
         if (!token) return;
 
+        const baseURL =
+        import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
         const res = await fetch(
-          `http://localhost:8080/api/society-admins/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        `${baseURL}/society-admins/me`,
+      {
+        headers: {
+         Authorization: `Bearer ${token}`,
+       },
+      }
+    );
 
         const data = await res.json();
         const name = data?.society?.name;
@@ -58,14 +61,17 @@ export default function Topbar({ isSidebarOpen, toggleSidebar }) {
       try {
         if (!token) return;
 
-        const res = await axios.get(
-          "http://localhost:8080/api/notifications/user",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const baseURL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const res = await axios.get(
+  `${baseURL}/notifications/user`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
         // 🔔 sirf unread / unclicked notifications
         const filtered = res.data.filter(

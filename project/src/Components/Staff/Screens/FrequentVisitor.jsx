@@ -4,7 +4,7 @@ import { User } from "lucide-react";
 
 const SOCIETY_ID = localStorage.getItem("societyId");
 const IMAGE_BASE_URL =
-  "http://localhost:9090/api/visitors/image/get/visitor";
+  `${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/visitors/image/get/visitor`;
 
 export default function FrequentVisitor() {
   const [visitors, setVisitors] = useState([]);
@@ -18,9 +18,11 @@ export default function FrequentVisitor() {
     if (!SOCIETY_ID) return;
 
     try {
-      const res = await axios.get(
-        `http://localhost:9090/api/visitors/society/${SOCIETY_ID}/visitorType/FREQUENT`
-      );
+      const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const res = await axios.get(
+  `${baseURL}/visitors/society/${SOCIETY_ID}/visitorType/FREQUENT`
+);
 
       setVisitors(res.data?.data || res.data || []);
     } catch (err) {

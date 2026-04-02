@@ -19,14 +19,13 @@ function Navebar({ onMenuClick }) {
       if (!token) return;
 
       setLoading(true);
-      const res = await axios.get(
-        "http://localhost:8080/api/notifications/user",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+const res = await axios.get(`${BASE_URL}/notifications/user`, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
       console.log("NOTIFICATIONS RESPONSE 👉", res.data);
       setNotifications(res.data || []);
@@ -56,15 +55,17 @@ function Navebar({ onMenuClick }) {
   const handleNotificationClick = async (n) => {
     try {
       if (!n.read) {
-        await axios.put(
-          `http://localhost:8080/api/notifications/${n.id}/read`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+await axios.put(
+  `${BASE_URL}/notifications/${n.id}/read`,
+  {},
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
       }
 
       // update UI instantly
