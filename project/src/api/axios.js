@@ -10,14 +10,6 @@ const api = axios.create({
   },
 });
 
-// ✅ PRODUCTION (use this when deploying)
-// const api = axios.create({
-//   baseURL: import.meta.env.VITE_API_URL,
-//   headers: {
-//     "Content-Type": "application/json",
-//   },
-// });
-
 
 /* ================= JWT INTERCEPTOR ================= */
 api.interceptors.request.use(

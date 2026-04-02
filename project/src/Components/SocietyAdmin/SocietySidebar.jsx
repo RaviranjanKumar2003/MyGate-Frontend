@@ -84,10 +84,11 @@ export default function SocietySidebar({ open, onClose }) {
   };
 
   // ================= PROFILE IMAGE =================
-  const getProfileImage = (id) =>
-    imagePreview ||
-    // eslint-disable-next-line react-hooks/purity
-    `${api.defaults.baseURL}/society-admins/image/get/society-admin/${id}?t=${Date.now()}`;
+  const getProfileImage = (id) => {
+  if (imagePreview) return imagePreview;
+
+  return `${api.defaults.baseURL}/society-admins/image/get/society-admin/${id}?t=${Date.now()}`;
+};
 
   // ================= LOGOUT =================
   const handleLogout = () => {
