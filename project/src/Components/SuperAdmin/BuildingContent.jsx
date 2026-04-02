@@ -10,68 +10,68 @@ function BuildingContent({ society, onBack }) {
 
   /* ================= FETCH DATA ================= */
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // BUILDINGS
-        const [activeRes, inactiveRes] = await Promise.all([
-          axios.get(
-            `http://localhost:8080/api/societies/${society.id}/buildings`
-          ),
-          axios.get(
-            `http://localhost:8080/api/societies/${society.id}/buildings/inactive`
-          ),
-        ]);
+  const fetchData = async () => {
+    try {
+      const baseURL =
+        import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-        const activeBuildings = Array.isArray(activeRes.data)
-          ? activeRes.data
-          : [];
-        const inactiveBuildings = Array.isArray(inactiveRes.data)
-          ? inactiveRes.data
-          : [];
+      /* ===== BUILDINGS ===== */
+      const [activeRes, inactiveRes] = await Promise.all([
+        axios.get(`${baseURL}/societies/${society.id}/buildings`),
+        axios.get(`${baseURL}/societies/${society.id}/buildings/inactive`),
+      ]);
 
-        setBuildings(activeBuildings);
-        setInactiveBuildings(inactiveBuildings);
+      const activeBuildings = Array.isArray(activeRes.data)
+        ? activeRes.data
+        : [];
+      const inactiveBuildings = Array.isArray(inactiveRes.data)
+        ? inactiveRes.data
+        : [];
 
-        /* ===== FLOORS SUMMARY ===== */
-        const floorPromises = activeBuildings.map((b) =>
-          axios.get(
-            `http://localhost:8080/api/floors/society/${society.id}/building/${b.id}/summary`
-          )
-        );
+      setBuildings(activeBuildings);
+      setInactiveBuildings(inactiveBuildings);
 
-        const flatPromises = activeBuildings.map((b) =>
-          axios.get(
-            `http://localhost:8080/api/flats/building/${b.id}`
-          )
-        );
+      /* ===== FLOORS SUMMARY ===== */
+      const floorPromises = activeBuildings.map((b) =>
+        axios.get(
+          `${baseURL}/floors/society/${society.id}/building/${b.id}/summary`
+        )
+      );
 
-        const floorResults = await Promise.all(floorPromises);
-        const flatResults = await Promise.all(flatPromises);
+      /* ===== FLATS ===== */
+      const flatPromises = activeBuildings.map((b) =>
+        axios.get(`${baseURL}/flats/building/${b.id}`) // ✅ FIXED (no localhost)
+      );
 
-        const floorsData = {};
-        floorResults.forEach((res, idx) => {
-          const buildingId = activeBuildings[idx].id;
-          floorsData[buildingId] = {
-            total: res.data.totalFloor ?? 0,
-          };
-        });
+      const floorResults = await Promise.all(floorPromises);
+      const flatResults = await Promise.all(flatPromises);
 
-        const flatsData = {};
-        flatResults.forEach((res, idx) => {
-          const buildingId = activeBuildings[idx].id;
-          flatsData[buildingId] = res.data.length ?? 0; // Assuming API returns array of flats
-        });
+      /* ===== PROCESS FLOORS ===== */
+      const floorsData = {};
+      floorResults.forEach((res, idx) => {
+        const buildingId = activeBuildings[idx].id;
+        floorsData[buildingId] = {
+          total: res.data.totalFloor ?? 0,
+        };
+      });
 
-        setFloorsMap(floorsData);
-        setFlatsMap(flatsData);
+      /* ===== PROCESS FLATS ===== */
+      const flatsData = {};
+      flatResults.forEach((res, idx) => {
+        const buildingId = activeBuildings[idx].id;
+        flatsData[buildingId] = res.data.length ?? 0;
+      });
 
-      } catch (err) {
-        console.error("Failed to load data", err);
-      }
-    };
+      setFloorsMap(floorsData);
+      setFlatsMap(flatsData);
 
-    fetchData();
-  }, [society.id]);
+    } catch (err) {
+      console.error("Failed to load data", err);
+    }
+  };
+
+  fetchData();
+}, [society.id]);
 
   const dataToShow = activeTab === "active" ? buildings : inactiveBuildings;
 
