@@ -12,15 +12,15 @@ function AllSocieties({ onViewDetails }) {
   /* ================= FETCH ================= */
   const fetchSocieties = async () => {
     const baseURL =
-  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+      import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-const url =
-  activeTab === "ACTIVE"
-    ? `${baseURL}/societies`
-    : `${baseURL}/societies/inactive`;
+    const url =
+      activeTab === "ACTIVE"
+        ? `${baseURL}/societies`
+        : `${baseURL}/societies/inactive`;
 
-const res = await axios.get(url);
-    setSocieties(Array.isArray(res.data) ? res.data : []);
+    const res = await axios.get(url);
+      setSocieties(Array.isArray(res.data) ? res.data : []);
   };
 
   useEffect(() => {
@@ -30,10 +30,14 @@ const res = await axios.get(url);
 
   /* ================= DELETE ================= */
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this society?")) return;
-    await axios.delete(`http://localhost:8080/api/societies/${id}`);
-    fetchSocieties();
-  };
+  if (!window.confirm("Delete this society?")) return;
+
+  const baseURL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+  await axios.delete(`${baseURL}/societies/${id}`);
+  fetchSocieties();
+};
 
   /* ================= UPDATE ================= */
   const handleUpdate = async () => {
