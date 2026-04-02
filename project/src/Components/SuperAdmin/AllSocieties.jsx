@@ -50,7 +50,7 @@ function AllSocieties({ onViewDetails }) {
       fetchSocieties();
     // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      alert("Update failed");
+      alert("Update failed jii");
     }
   };
 
