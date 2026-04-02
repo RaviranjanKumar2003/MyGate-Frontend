@@ -41,18 +41,22 @@ function AllSocieties({ onViewDetails }) {
 
   /* ================= UPDATE ================= */
   const handleUpdate = async () => {
-    try {
-      await axios.put(
-        `http://localhost:8080/api/societies/${editSociety.id}`,
-        editSociety
-      );
-      setEditSociety(null);
-      fetchSocieties();
-    // eslint-disable-next-line no-unused-vars
-    } catch (err) {
-      alert("Update failed jii");
-    }
-  };
+  try {
+    const baseURL =
+      import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
+    await axios.put(
+      `${baseURL}/societies/${editSociety.id}`,
+      editSociety
+    );
+
+    setEditSociety(null);
+    fetchSocieties();
+  } catch (err) {
+    console.error(err);
+    alert("Update failed");
+  }
+};
 
   return (
     <div className="p-6">
