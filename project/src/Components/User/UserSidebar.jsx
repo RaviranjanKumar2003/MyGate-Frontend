@@ -53,7 +53,6 @@ function UserSidebar({
   /* ================= IMAGE ================= */
   const getProfileImage = (id) =>
     imagePreview ||
-    // eslint-disable-next-line react-hooks/purity
     `${api.defaults.baseURL}/users/image/get/user/${id}?t=${Date.now()}`;
 
   const handleImageChange = (e) => {
@@ -68,9 +67,14 @@ function UserSidebar({
     const fd = new FormData();
     fd.append("image", imageFile);
     await api.post(
-      `/users/society/${SOCIETY_ID}/image/upload/${userProfile.id}`,
-      fd
-    );
+        `/users/society/${SOCIETY_ID}/image/upload/${userProfile.id}`,
+        fd,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
   };
 
   const handleUpdate = async () => {
@@ -84,6 +88,7 @@ function UserSidebar({
         }
       );
       window.location.reload();
+      alert("Profile updated Successfully");
     // eslint-disable-next-line no-unused-vars
     } catch (err) {
       alert("Profile update failed");
