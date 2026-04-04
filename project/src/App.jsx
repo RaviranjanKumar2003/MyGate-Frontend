@@ -23,6 +23,8 @@ import Complaints from "./Components/SocietyAdmin/SocietyComplaints";
 import SASettings from "./Components/SocietyAdmin/SASettings";
 
 function App() {
+  console.log("ENV FULL:", import.meta.env);
+
   const [userRole, setUserRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
