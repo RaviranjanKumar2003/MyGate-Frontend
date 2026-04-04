@@ -179,7 +179,7 @@ const openReactionUsers = async (messageId) => {
 
 /*file*/
 const [selectedFile, setSelectedFile] = useState(null);
-const [fileType, setFileType] = useState(null);
+const [, setFileType] = useState(null);
 
 const handleFileSelect = (file, type) => {
 
@@ -290,6 +290,7 @@ const handleFileSelect = (file, type) => {
 
   useEffect(() => {
     fetchMessages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* OUTSIDE CLICK CLOSE */
@@ -567,7 +568,6 @@ const uploadFile = async (file) => {
 
           const currentDate = new Date(msg.date).toDateString();
           const showDate = currentDate !== lastDate;
-          // eslint-disable-next-line react-hooks/immutability
           lastDate = currentDate;
 
           return (

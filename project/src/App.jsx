@@ -24,6 +24,7 @@ import SASettings from "./Components/SocietyAdmin/SASettings";
 
 function App() {
   console.log("ENV FULL:", import.meta.env);
+  console.log("APP START");
 
   const [userRole, setUserRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -54,11 +55,13 @@ function App() {
         <Route
           path="/"
           element={
-            isLoggedIn && userRole
-              ? <Navigate to={ROLE_DASHBOARD_MAP[userRole]} replace />
-              : <Navigate to="/login" replace />
-          }
-        />
+          isLoggedIn && userRole ? (
+          <Navigate to={ROLE_DASHBOARD_MAP[userRole] || "/login"} replace />
+          ) : (
+             <Login />   // ⭐ CHANGE HERE
+          )
+      }
+/>
 
         {/* AUTH */}
         <Route path="/login" element={<Login />} />
