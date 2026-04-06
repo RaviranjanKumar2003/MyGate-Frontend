@@ -555,15 +555,14 @@ const uploadFile = async (file) => {
 
     const room = `audio-${SOCIETY_ID}-${Date.now()}`;
 
-    stompClient.send(
-      "/app/start-call",
-      {},
-      JSON.stringify({
-        roomName: room,
-        callerName: USER_NAME,
-        type: "audio"
-      })
-    );
+    stompClient.publish({
+  destination: "/app/start-call",
+  body: JSON.stringify({
+    roomName: room,
+    callerName: USER_NAME,
+    type: "audio"
+  })
+});
 
     playCallingRing();
 
@@ -583,15 +582,14 @@ const uploadFile = async (file) => {
 
     const room = `video-${SOCIETY_ID}-${Date.now()}`;
 
-    stompClient.send(
-      "/app/start-call",
-      {},
-      JSON.stringify({
-        roomName: room,
-        callerName: USER_NAME,
-        type: "video"
-      })
-    );
+    stompClient.publish({
+  destination: "/app/start-call",
+  body: JSON.stringify({
+    roomName: room,
+    callerName: USER_NAME,
+    type: "video"
+  })
+});
 
     playCallingRing();
 
