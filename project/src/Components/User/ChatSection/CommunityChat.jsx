@@ -75,6 +75,22 @@ function CommunityChat({ userProfile }) {
 
   const [isConnected, setIsConnected] = useState(false);
 
+  // 🔹 Helper function for ending a call safely
+const endCall = () => {
+  if (stompClient.connected && roomName) {
+    stompClient.publish({
+      destination: "/app/end-call",
+      body: JSON.stringify({ roomName })
+    });
+  }
+
+  stopRingtone();
+  setStartCall(false);
+  setIncomingCall(false);
+  setRoomName("");
+  setCallType(null);
+};
+
   
 
 /* RINGTONE */
@@ -258,6 +274,23 @@ const handleFileSelect = (file, type) => {
       playIncomingRing();
     });
 
+    // ✅ END CALL SUBSCRIPTION
+    stompClient.subscribe("/topic/end-call", (msg) => {
+
+      const data = JSON.parse(msg.body);
+
+      console.log("⛔ Call ended:", data);
+
+      if (data.roomName === roomName) {
+        stopRingtone();
+        setStartCall(false);
+        setIncomingCall(false);
+        setRoomName("");
+        setCallType(null);
+      }
+
+    });
+
   };
 
   stompClient.activate(); // ⭐⭐⭐ MOST IMPORTANT
@@ -266,8 +299,7 @@ const handleFileSelect = (file, type) => {
     stompClient.deactivate();
   };
 
-}, []);
-
+}, [roomName]);
 
 
   useEffect(() => {
@@ -276,6 +308,9 @@ const handleFileSelect = (file, type) => {
   }
 }, [startCall]);
 
+
+//================end call
+  
 
   /* PROFILE IMAGE */
 
@@ -626,7 +661,7 @@ const uploadFile = async (file) => {
   playCallingRing();
 
   setRoomName(room);
-  setCallType("video");
+  setCallType("video");         // onClose
   setStartCall(true);
 
 }}
@@ -1103,20 +1138,14 @@ return (
       {startCall && callType === "video" && (
   <ChatVideoCall
     roomName={roomName}
-    onClose={() => {
-      stopRingtone();
-      setStartCall(false);
-    }}
+    onClose={endCall} // ✅ safe call end
   />
 )}
 
 {startCall && callType === "audio" && (
   <ChatAudioCall
     roomName={roomName}
-    onClose={() => {
-      stopRingtone();
-      setStartCall(false);
-    }}
+    onClose={endCall} // ✅ safe call end
   />
 )}
 
