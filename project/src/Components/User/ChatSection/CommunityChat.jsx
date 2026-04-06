@@ -75,22 +75,6 @@ function CommunityChat({ userProfile }) {
 
   const [isConnected, setIsConnected] = useState(false);
 
-  // 🔹 Helper function for ending a call safely
-const endCall = () => {
-  if (stompClient.connected && roomName) {
-    stompClient.publish({
-      destination: "/app/end-call",
-      body: JSON.stringify({ roomName })
-    });
-  }
-
-  stopRingtone();
-  setStartCall(false);
-  setIncomingCall(false);
-  setRoomName("");
-  setCallType(null);
-};
-
   
 
 /* RINGTONE */
@@ -310,7 +294,31 @@ const handleFileSelect = (file, type) => {
 
 
 //================end call
-  
+   const endCall = () => {
+  if (!stompClient.connected) {
+    console.log("❌ STOMP not connected, cannot end call");
+    stopRingtone();
+    setStartCall(false);
+    setIncomingCall(false);
+    setRoomName("");
+    setCallType(null);
+    return;
+  }
+
+  if (roomName) {
+    stompClient.publish({
+      destination: "/app/end-call",
+      body: JSON.stringify({ roomName })
+    });
+  }
+
+  stopRingtone();
+  setStartCall(false);
+  setIncomingCall(false);
+  setRoomName("");
+  setCallType(null);
+};
+
 
   /* PROFILE IMAGE */
 
@@ -1138,14 +1146,40 @@ return (
       {startCall && callType === "video" && (
   <ChatVideoCall
     roomName={roomName}
-    onClose={endCall} // ✅ safe call end
+    onClose={() => {
+
+  // ⭐ backend ko bolo call end ho gaya
+  stompClient.publish({
+    destination: "/app/end-call",
+    body: JSON.stringify({
+      roomName: roomName
+    })
+  });
+
+  stopRingtone();
+  setStartCall(false);
+
+}}
   />
 )}
 
 {startCall && callType === "audio" && (
   <ChatAudioCall
     roomName={roomName}
-    onClose={endCall} // ✅ safe call end
+    onClose={() => {
+
+  // ⭐ backend ko bolo call end ho gaya
+  stompClient.publish({
+    destination: "/app/end-call",
+    body: JSON.stringify({
+      roomName: roomName
+    })
+  });
+
+  stopRingtone();
+  setStartCall(false);
+
+}}
   />
 )}
 
