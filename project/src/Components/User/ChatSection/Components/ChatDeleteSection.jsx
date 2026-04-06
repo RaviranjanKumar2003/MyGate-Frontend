@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import EmojiPicker from "emoji-picker-react";
-import api from "../../api/axios";
+import api from "../../../../api/axios";
 
 function ChatDeleteSection({
   close,

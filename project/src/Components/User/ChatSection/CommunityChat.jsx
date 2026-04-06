@@ -16,16 +16,16 @@ import {
 } from "lucide-react";
 
 import EmojiPicker from "emoji-picker-react";
-import api from "../../api/axios";
-import stompClient from "../../socket";
-import incomingRingtone from "../../assets/ringtone.mp3";
-import callingRingtone from "../../assets/outgoingrington.mp3";
+import api from "../../../api/axios";
+import stompClient from "../../../socket";
+import incomingRingtone from "../../../assets/ringtone.mp3";
+import callingRingtone from "../../../assets/outgoingrington.mp3";
 
-import ChatDeleteSection from "./ChatDeleteSection";
-import ChatDocument from "./ChatDocument";
-import ChatThreeDot from "./ChatThreeDot";
-import ChatVideoCall from "./ChatVideoCall";
-import ChatAudioCall from "./ChatAudioCall";
+import ChatDeleteSection from "./Components/ChatDeleteSection";
+import ChatDocument from "./Components/ChatDocument";
+import ChatThreeDot from "./Components/ChatThreeDot";
+import ChatVideoCall from "./Components/ChatVideoCall";
+import ChatAudioCall from "./Components/ChatAudioCall";
 
 
 
@@ -83,6 +83,14 @@ const playIncomingRing = () => {
     incomingRef.current.play().catch(() => {});
   }
 };
+
+useEffect(() => {
+  if (incomingCall) {
+    playIncomingRing();
+  } else {
+    stopRingtone();
+  }
+}, [incomingCall]);
 
 const playCallingRing = () => {
   if (callingRef.current) {
@@ -194,24 +202,53 @@ const handleFileSelect = (file, type) => {
 
   useEffect(() => {
 
-    stompClient.connect({}, () => {
-      
+  stompClient.onConnect = () => {
 
-      stompClient.subscribe("/topic/incoming-call", (msg) => {
-        console.log("CALL RECEIVED:", msg.body);
+    console.log("✅ Connected");
 
-        const data = JSON.parse(msg.body);
+    stompClient.subscribe(`/topic/messages/${SOCIETY_ID}`, (msg) => {
 
-        setRoomName(data.roomName);
-        setIncomingCall(true);
-        playIncomingRing();
+      const data = JSON.parse(msg.body);
 
-      });
+      console.log("🔥 RECEIVED:", data);
+
+      setMessages(prev => {
+  // remove temp message if exists
+  const filtered = prev.filter(m => m.id !== data.tempId);
+
+  // avoid duplicate
+  if (filtered.some(m => m.id === data.id)) return filtered;
+
+  return [...filtered, {
+    id: data.id,
+    sender: data.senderName,
+    senderId: data.senderId,
+    role: data.role,
+    userType: data.userType || "Member",
+    text: data.message,
+    date: new Date(data.createdAt),
+    time: new Date(data.createdAt).toLocaleTimeString("en-IN", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: true
+}),
+    seen: data.seen || false,
+    me: data.senderId == USER_ID,
+    reactions: data.reactions || {}
+  }];
+});
 
     });
 
-  }, []);
+  };
 
+  stompClient.activate();
+
+  return () => {
+    stompClient.deactivate();
+  };
+
+}, []);
   useEffect(() => {
   if (!startCall) {
     stopRingtone();
@@ -361,34 +398,54 @@ const handleFileSelect = (file, type) => {
     setMessage((prev) => prev + emojiData.emoji);
   };
 
-  /* SEND MESSAGE */
+  // time: new Date
 
-  const sendMessage = async () => {
+  /*======================== SEND MESSAGE ========================*/
 
-    if (!message.trim()) return;
+  const sendMessage = () => {
 
-    try {
+  if (!message.trim()) return;
 
-      await api.post("/society-chat/send", {
+  if (!stompClient.connected) {
+    console.log("❌ Not connected");
+    return;
+  }
 
-        societyId: SOCIETY_ID,
-        senderId: USER_ID,
-        senderName: USER_NAME,
-        role: USER_ROLE,
-        userType: USER_TYPE,
-        message: message
+  const tempId = Date.now();
 
-      });
-
-      setMessage("");
-      fetchMessages();
-
-    } catch (err) {
-      console.error(err);
-    }
-
+  // ⭐ Instant UI
+  const tempMsg = {
+    id: tempId,
+    sender: USER_NAME,
+    senderId: USER_ID,
+    role: USER_ROLE,
+    userType: USER_TYPE,
+    text: message,
+    date: new Date(),
+    time: new Date().toLocaleTimeString("en-IN"),
+    seen: false,
+    me: true,
+    reactions: {}
   };
 
+  setMessages(prev => [...prev, tempMsg]);
+
+  // ⭐ Send with tempId
+  stompClient.publish({
+    destination: "/app/chat.send",
+    body: JSON.stringify({
+      tempId: tempId,   // ⭐ IMPORTANT
+      societyId: Number(SOCIETY_ID),
+      senderId: USER_ID,
+      senderName: USER_NAME,
+      role: USER_ROLE,
+      userType: USER_TYPE,
+      message: message
+    })
+  });
+
+  setMessage("");
+};
   /* FILE UPLOAD */
 
 const uploadFile = async (file) => {
@@ -1089,4 +1146,4 @@ return (
 
 }
 
-export default CommunityChat;
+export default CommunityChat;    

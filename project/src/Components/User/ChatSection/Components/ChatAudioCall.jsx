@@ -1,15 +1,15 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { PhoneOff, Mic, MicOff } from "lucide-react";
 
 function ChatAudioCall({ roomName, onClose }) {
 
   const localStream = useRef(null);
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
 
     const startAudio = async () => {
       try {
-
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: false
@@ -32,6 +32,7 @@ function ChatAudioCall({ roomName, onClose }) {
 
   }, []);
 
+  /* ✅ MUTE TOGGLE FIX */
   const toggleMute = () => {
 
     if (!localStream.current) return;
@@ -40,6 +41,7 @@ function ChatAudioCall({ roomName, onClose }) {
 
     if (audioTrack) {
       audioTrack.enabled = !audioTrack.enabled;
+      setIsMuted(!audioTrack.enabled); // ⭐ state update
     }
 
   };
@@ -56,17 +58,15 @@ function ChatAudioCall({ roomName, onClose }) {
 
       <div className="flex gap-6">
 
-        {/* MUTE BUTTON */}
-
+        {/* ✅ MUTE BUTTON */}
         <button
           onClick={toggleMute}
           className="bg-gray-700 p-4 rounded-full"
         >
-          <Mic size={22}/>
+          {isMuted ? <MicOff size={22}/> : <Mic size={22}/>}
         </button>
 
         {/* END CALL */}
-
         <button
           onClick={onClose}
           className="bg-red-500 p-4 rounded-full"

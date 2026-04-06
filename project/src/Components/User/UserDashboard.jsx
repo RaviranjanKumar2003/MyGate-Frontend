@@ -12,7 +12,7 @@ import Payments from "./UserPayments";
 import UserComplaint from "./UserComplaint";
 import UserNotice from "./UserNotice";
 import MyQR from "./MyQR";
-import CommunityChat from "./CommunityChat";
+import CommunityChat from "./ChatSection/CommunityChat";
 import SocietyBazaar from "./ECommerce/SocietyBazaar";
 
 function UserDashboard() {
