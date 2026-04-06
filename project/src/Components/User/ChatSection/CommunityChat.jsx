@@ -276,20 +276,18 @@ const handleFileSelect = (file, type) => {
 
     // ✅ END CALL SUBSCRIPTION
     stompClient.subscribe("/topic/end-call", (msg) => {
+  const data = JSON.parse(msg.body);
+  console.log("⛔ Call ended:", data);
 
-      const data = JSON.parse(msg.body);
-
-      console.log("⛔ Call ended:", data);
-
-      if (data.roomName === roomName) {
-        stopRingtone();
-        setStartCall(false);
-        setIncomingCall(false);
-        setRoomName("");
-        setCallType(null);
-      }
-
-    });
+  // Agar user currently call me hai ya incoming call hai
+  if (startCall && data.roomName === roomName) {
+  stopRingtone();
+  setStartCall(false);
+  setIncomingCall(false);
+  setRoomName("");
+  setCallType(null);
+}
+});
 
   };
 
