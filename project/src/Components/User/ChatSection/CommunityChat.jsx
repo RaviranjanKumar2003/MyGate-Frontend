@@ -73,6 +73,8 @@ function CommunityChat({ userProfile }) {
   const incomingRef = useRef(null);
   const callingRef = useRef(null);
 
+  const [isConnected, setIsConnected] = useState(false);
+
   
 
 /* RINGTONE */
@@ -200,12 +202,14 @@ const handleFileSelect = (file, type) => {
 
   /* WEBSOCKET */
 
-  useEffect(() => {
+ useEffect(() => {
 
   stompClient.onConnect = () => {
 
     console.log("✅ Connected");
+    setIsConnected(true);
 
+    // ✅ CHAT
     stompClient.subscribe(`/topic/messages/${SOCIETY_ID}`, (msg) => {
 
       const data = JSON.parse(msg.body);
@@ -213,42 +217,59 @@ const handleFileSelect = (file, type) => {
       console.log("🔥 RECEIVED:", data);
 
       setMessages(prev => {
-  // remove temp message if exists
-  const filtered = prev.filter(m => m.id !== data.tempId);
+        const filtered = prev.filter(m => m.id !== data.tempId);
 
-  // avoid duplicate
-  if (filtered.some(m => m.id === data.id)) return filtered;
+        if (filtered.some(m => m.id === data.id)) return filtered;
 
-  return [...filtered, {
-    id: data.id,
-    sender: data.senderName,
-    senderId: data.senderId,
-    role: data.role,
-    userType: data.userType || "Member",
-    text: data.message,
-    date: new Date(data.createdAt),
-    time: new Date(data.createdAt).toLocaleTimeString("en-IN", {
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: true
-}),
-    seen: data.seen || false,
-    me: data.senderId == USER_ID,
-    reactions: data.reactions || {}
-  }];
-});
+        return [...filtered, {
+          id: data.id,
+          sender: data.senderName,
+          senderId: data.senderId,
+          role: data.role,
+          userType: data.userType || "Member",
+          text: data.message,
+          date: new Date(data.createdAt),
+          time: new Date(data.createdAt).toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true
+          }),
+          seen: data.seen || false,
+          me: data.senderId == USER_ID,
+          reactions: data.reactions || {}
+        }];
+      });
 
+    });
+
+    // ✅ INCOMING CALL
+    stompClient.subscribe("/topic/incoming-call", (msg) => {
+
+      const data = JSON.parse(msg.body);
+
+      console.log("📞 Incoming call:", data);
+
+      if (data.callerName === USER_NAME) return;
+
+      setRoomName(data.roomName);
+      setCallType(data.type);
+
+      setIncomingCall(true);
+      playIncomingRing();
     });
 
   };
 
-  stompClient.activate();
+  stompClient.activate(); // ⭐⭐⭐ MOST IMPORTANT
 
   return () => {
     stompClient.deactivate();
   };
 
 }, []);
+
+
+
   useEffect(() => {
   if (!startCall) {
     stopRingtone();
@@ -553,24 +574,29 @@ const uploadFile = async (file) => {
   className="cursor-pointer"
   onClick={() => {
 
-    const room = `audio-${SOCIETY_ID}-${Date.now()}`;
+  // ❌ connection check
+  if (!stompClient.connected) {
+    console.log("❌ Not connected yet");
+    return;
+  }
 
-    stompClient.publish({
-  destination: "/app/start-call",
-  body: JSON.stringify({
-    roomName: room,
-    callerName: USER_NAME,
-    type: "audio"
-  })
-});
+  const room = `audio-${SOCIETY_ID}-${Date.now()}`;
 
-    playCallingRing();
+  stompClient.publish({
+    destination: "/app/start-call", // ⚠️ agar backend change kiya hai to yaha bhi change karo
+    body: JSON.stringify({
+      roomName: room,
+      callerName: USER_NAME,
+      type: "audio"
+    })
+  });
 
-    setRoomName(room);
-    setCallType("audio");   // ⭐
-    setStartCall(true);
+  playCallingRing();
 
-  }}
+  setRoomName(room);
+  setCallType("audio");
+  setStartCall(true);
+}}
 />
 
           {/* VIDEO CALL */}
@@ -580,24 +606,30 @@ const uploadFile = async (file) => {
   className="cursor-pointer"
   onClick={() => {
 
-    const room = `video-${SOCIETY_ID}-${Date.now()}`;
+  // ❌ connection check (VERY IMPORTANT)
+  if (!stompClient.connected) {
+    console.log("❌ Not connected yet");
+    return;
+  }
 
-    stompClient.publish({
-  destination: "/app/start-call",
-  body: JSON.stringify({
-    roomName: room,
-    callerName: USER_NAME,
-    type: "video"
-  })
-});
+  const room = `video-${SOCIETY_ID}-${Date.now()}`;
 
-    playCallingRing();
+  stompClient.publish({
+    destination: "/app/start-call", // ⚠️ backend change kiya ho to yaha bhi change karo
+    body: JSON.stringify({
+      roomName: room,
+      callerName: USER_NAME,
+      type: "video"
+    })
+  });
 
-    setRoomName(room);
-    setCallType("video");   // ⭐
-    setStartCall(true);
+  playCallingRing();
 
-  }}
+  setRoomName(room);
+  setCallType("video");
+  setStartCall(true);
+
+}}
 />
           <Search size={20}/>
 
