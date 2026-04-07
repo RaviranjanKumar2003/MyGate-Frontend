@@ -61,17 +61,18 @@ function ChatVideoCall({ roomName, onClose }) {
           // ✅ Force lobby off
           try {
             api.executeCommand("toggleLobby", false);
-          } catch (e) {}
+          // eslint-disable-next-line no-unused-vars
+          } catch (e) { /* empty */ }
 
           // ✅ Auto join confirmation
-          api.addEventListener("videoConferenceJoined", () => {
-            console.log("✅ Auto Joined Successfully");
-          });
+          api.on("videoConferenceJoined", () => {
+  console.log("✅ Joined");
+});
 
           // 🔴 Close on leave
-          api.addEventListener("videoConferenceLeft", () => {
-            onClose();
-          });
+          api.on("videoConferenceJoined", () => {
+  console.log("✅ Joined");
+});
         }}
       />
 

@@ -216,7 +216,7 @@ const handleFileSelect = (file, type) => {
 
 };
 
-  /* WEBSOCKET */
+  /* WEBSOCKET const room */
 
  useEffect(() => {
 
@@ -613,7 +613,7 @@ const uploadFile = async (file) => {
     return;
   }
 
-  const room = `audio-${SOCIETY_ID}-${Date.now()}`;
+  const room = `audio-${SOCIETY_ID}`;
 
   stompClient.publish({
     destination: "/app/start-call", // ⚠️ agar backend change kiya hai to yaha bhi change karo
@@ -645,7 +645,7 @@ const uploadFile = async (file) => {
     return;
   }
 
-  const room = `video-${SOCIETY_ID}-${Date.now()}`;
+  const room = `video-${SOCIETY_ID}`;
 
   stompClient.publish({
     destination: "/app/start-call", // ⚠️ backend change kiya ho to yaha bhi change karo
