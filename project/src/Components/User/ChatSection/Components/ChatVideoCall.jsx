@@ -3,7 +3,7 @@ import { JitsiMeeting } from "@jitsi/react-sdk";
 
 function ChatVideoCall({ roomName, onClose }) {
 
-  // 🔴 ESC key se bhi close
+  // 🔴 ESC key se close
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") {
@@ -18,8 +18,10 @@ function ChatVideoCall({ roomName, onClose }) {
     };
   }, [onClose]);
 
-  return (
+  // ✅ Dynamic room fix (MOST IMPORTANT)
+  const finalRoomName = `room-${roomName}-${Date.now()}`;
 
+  return (
     <div className="fixed inset-0 bg-black z-50">
 
       {/* 🔴 END CALL BUTTON */}
@@ -34,17 +36,17 @@ function ChatVideoCall({ roomName, onClose }) {
 
       {/* 🎥 JITSI MEETING */}
       <JitsiMeeting
-        roomName={roomName}
+        roomName={finalRoomName}
 
         configOverwrite={{
           startWithAudioMuted: false,
           startWithVideoMuted: false,
-          prejoinPageEnabled: false   // ✅ direct join
+          prejoinPageEnabled: false, // ✅ skip waiting screen
         }}
 
         interfaceConfigOverwrite={{
           SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false
+          SHOW_WATERMARK_FOR_GUESTS: false,
         }}
 
         getIFrameRef={(iframe) => {
@@ -52,18 +54,29 @@ function ChatVideoCall({ roomName, onClose }) {
           iframe.style.width = "100%";
         }}
 
-        onApiReady={(externalApi) => {
-          // 🔴 jab user manually call end kare (leave kare)
-          externalApi.addListener("videoConferenceLeft", () => {
+        onApiReady={(api) => {
+
+          // ✅ Jab meeting join ho jaye
+          api.addEventListener("videoConferenceJoined", () => {
+            console.log("✅ Joined meeting");
+
+            // 🔥 lobby disable (important)
+            try {
+              api.executeCommand("toggleLobby", false);
+            } catch (e) {
+              console.log("Lobby control not available");
+            }
+          });
+
+          // 🔴 Jab user leave kare
+          api.addEventListener("videoConferenceLeft", () => {
             onClose();
           });
         }}
       />
 
     </div>
-
   );
-
 }
 
 export default ChatVideoCall;
