@@ -1,60 +1,70 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { JitsiMeeting } from "@jitsi/react-sdk";
 
 function ChatVideoCall({ roomName, onClose }) {
-  const jitsiContainerRef = useRef(null);
 
   useEffect(() => {
-    const domain = "meet.jit.si";
-
-    const options = {
-      roomName: `room-${roomName}`, // ✅ stable room (same for both users)
-      parentNode: jitsiContainerRef.current,
-
-      configOverwrite: {
-        startWithAudioMuted: false,
-        startWithVideoMuted: false,
-        prejoinPageEnabled: false, // ✅ NO JOIN SCREEN
-      },
-
-      interfaceConfigOverwrite: {
-        SHOW_JITSI_WATERMARK: false,
-      },
+    const handleEsc = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
     };
 
-    const api = new window.JitsiMeetExternalAPI(domain, options);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
 
-    // ✅ meeting join
-    api.addListener("videoConferenceJoined", () => {
-      console.log("✅ Call Connected");
-    });
-
-    // 🔴 leave event
-    api.addListener("videoConferenceLeft", () => {
-      onClose();
-    });
-
-    return () => {
-      api.dispose();
-    };
-  }, [roomName, onClose]);
+  // ✅ SAME ROOM FOR BOTH USERS
+  const finalRoomName = `room-${roomName}`;
 
   return (
     <div className="fixed inset-0 bg-black z-50">
 
-      {/* END CALL */}
+      {/* END CALL BUTTON */}
       <div className="absolute top-3 right-3 z-50">
         <button
           onClick={onClose}
-          className="bg-red-500 text-white px-4 py-2 rounded"
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
         >
           End Call
         </button>
       </div>
 
-      {/* JITSI VIDEO */}
-      <div
-        ref={jitsiContainerRef}
-        style={{ width: "100%", height: "100%" }}
+      <JitsiMeeting
+        roomName={finalRoomName}
+
+        configOverwrite={{
+          startWithAudioMuted: false,
+          startWithVideoMuted: false,
+          prejoinPageEnabled: false, // ✅ IMPORTANT
+        }}
+
+        interfaceConfigOverwrite={{
+          SHOW_JITSI_WATERMARK: false,
+          SHOW_WATERMARK_FOR_GUESTS: false,
+        }}
+
+        getIFrameRef={(iframe) => {
+          iframe.style.height = "100vh";
+          iframe.style.width = "100%";
+        }}
+
+        onApiReady={(api) => {
+
+          api.addEventListener("videoConferenceJoined", () => {
+            console.log("✅ Joined meeting");
+
+            try {
+              api.executeCommand("toggleLobby", false);
+            } catch (e) {
+              console.log("Lobby control not available");
+            }
+          });
+
+          api.addEventListener("videoConferenceLeft", () => {
+            onClose();
+          });
+        }}
       />
     </div>
   );
