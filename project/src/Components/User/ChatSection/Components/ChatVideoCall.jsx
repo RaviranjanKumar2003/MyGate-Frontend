@@ -14,7 +14,6 @@ function ChatVideoCall({ roomName, onClose }) {
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
-  // ✅ SAME ROOM FOR BOTH USERS
   const finalRoomName = `room-${roomName}`;
 
   return (
@@ -34,14 +33,20 @@ function ChatVideoCall({ roomName, onClose }) {
         roomName={finalRoomName}
 
         configOverwrite={{
+          prejoinPageEnabled: false,
           startWithAudioMuted: false,
           startWithVideoMuted: false,
-          prejoinPageEnabled: false, // ✅ IMPORTANT
+          disableDeepLinking: true,
         }}
 
         interfaceConfigOverwrite={{
           SHOW_JITSI_WATERMARK: false,
           SHOW_WATERMARK_FOR_GUESTS: false,
+          DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+        }}
+
+        userInfo={{
+          displayName: "User",
         }}
 
         getIFrameRef={(iframe) => {
@@ -51,21 +56,25 @@ function ChatVideoCall({ roomName, onClose }) {
 
         onApiReady={(api) => {
 
-          api.addEventListener("videoConferenceJoined", () => {
-            console.log("✅ Joined meeting");
+          console.log("🔥 API READY");
 
-            try {
-              api.executeCommand("toggleLobby", false);
-            } catch (e) {
-              console.log("Lobby control not available");
-            }
+          // ✅ Force lobby off
+          try {
+            api.executeCommand("toggleLobby", false);
+          } catch (e) {}
+
+          // ✅ Auto join confirmation
+          api.addEventListener("videoConferenceJoined", () => {
+            console.log("✅ Auto Joined Successfully");
           });
 
+          // 🔴 Close on leave
           api.addEventListener("videoConferenceLeft", () => {
             onClose();
           });
         }}
       />
+
     </div>
   );
 }
