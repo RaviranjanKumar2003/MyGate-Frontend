@@ -75,12 +75,17 @@ function CommunityChat({ userProfile }) {
 
   const [isConnected, setIsConnected] = useState(false);
 
+  const [isAlone, setIsAlone] = useState(false);
+
   // 🔹 Helper function for ending a call safely
 const endCall = () => {
   if (stompClient.connected && roomName) {
     stompClient.publish({
       destination: "/app/end-call",
-      body: JSON.stringify({ roomName })
+      body: JSON.stringify({
+  roomName,
+  callerName: USER_NAME   // ⭐ VERY IMPORTANT
+})
     });
   }
 
@@ -216,7 +221,7 @@ const handleFileSelect = (file, type) => {
 
 };
 
-  /* WEBSOCKET const room */
+  /* WEBSOCKET */
 
  useEffect(() => {
 
@@ -258,6 +263,15 @@ const handleFileSelect = (file, type) => {
 
     });
 
+   stompClient.subscribe("/topic/alone-user", (msg) => {
+  const data = JSON.parse(msg.body);
+
+  if (data.roomName === roomName && startCall) { // ⭐ ADD startCall
+    console.log("⚠️ You are alone");
+    setIsAlone(true);
+  }
+});
+
     // ✅ INCOMING CALL
     stompClient.subscribe("/topic/incoming-call", (msg) => {
 
@@ -280,7 +294,7 @@ const handleFileSelect = (file, type) => {
   console.log("⛔ Call ended:", data);
 
   // Agar user currently call me hai ya incoming call hai
-  if (startCall && data.roomName === roomName) {
+  if (data.roomName === roomName) {
   stopRingtone();
   setStartCall(false);
   setIncomingCall(false);
@@ -297,7 +311,7 @@ const handleFileSelect = (file, type) => {
     stompClient.deactivate();
   };
 
-}, [roomName]);
+}, []);
 
 
   useEffect(() => {
@@ -613,7 +627,7 @@ const uploadFile = async (file) => {
     return;
   }
 
-  const room = `audio-${SOCIETY_ID}`;
+  const room = `audio-${Date.now()}`;
 
   stompClient.publish({
     destination: "/app/start-call", // ⚠️ agar backend change kiya hai to yaha bhi change karo
@@ -629,6 +643,7 @@ const uploadFile = async (file) => {
   setRoomName(room);
   setCallType("audio");
   setStartCall(true);
+  setIsAlone(false);
 }}
 />
 
@@ -645,7 +660,7 @@ const uploadFile = async (file) => {
     return;
   }
 
-  const room = `video-${SOCIETY_ID}`;
+  const room = `video-${Date.now()}`;
 
   stompClient.publish({
     destination: "/app/start-call", // ⚠️ backend change kiya ho to yaha bhi change karo
@@ -661,6 +676,7 @@ const uploadFile = async (file) => {
   setRoomName(room);
   setCallType("video");         // onClose
   setStartCall(true);
+  setIsAlone(false);
 
 }}
 />
@@ -1147,6 +1163,12 @@ return (
   />
 )}
 
+{isAlone && startCall && (
+  <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-4 py-2 rounded z-50">
+    You are the only participant
+  </div>
+)}
+
       {/* INCOMING CALL */}
 
       {incomingCall && (
@@ -1162,21 +1184,43 @@ return (
             <button
               onClick={() => {
 
-                stopRingtone();
-                setIncomingCall(false);
-                setStartCall(true);
+  if (!stompClient.connected) return;
 
-              }}
+  // 🔥 JOIN CALL
+  stompClient.publish({
+    destination: "/app/join-call",
+    body: JSON.stringify({
+      roomName: roomName,
+      callerName: USER_NAME
+    })
+  });
+
+  stopRingtone();
+  setIncomingCall(false);
+  setStartCall(true);
+  setIsAlone(false); // ⭐ NEW
+
+}}
               className="bg-green-500 text-white px-4 py-2 rounded mr-3"
             >
               Accept
             </button>
 
             <button
-              onClick={() => {
+             onClick={() => {
 
-    stopRingtone();
-    setIncomingCall(false);
+  if (stompClient.connected) {
+    stompClient.publish({
+      destination: "/app/end-call",
+      body: JSON.stringify({
+        roomName,
+        callerName: USER_NAME
+      })
+    });
+  }
+
+  stopRingtone();
+  setIncomingCall(false);
 
 }}
               className="bg-red-500 text-white px-4 py-2 rounded"
