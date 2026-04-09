@@ -524,42 +524,54 @@ const uploadFile = async (file) => {
   formData.append("file", file);
 
   try {
-
-    const res = await api.post(
-  "/files/upload",
-  formData,
-  {
-    headers: {
-      "Content-Type": "multipart/form-data"
-    }
-  }
-);
+    const res = await api.post("/files/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
 
     const fileData = res.data;
-
     const fileUrl = fileData.fileUrl;
 
     console.log("File uploaded:", fileData);
 
-    // ⭐ chat message send karo
-    await api.post("/society-chat/send", {
-      societyId: SOCIETY_ID,
+    // ✅ SAME AS sendMessage()
+    const tempId = Date.now();
+
+    // ⭐ instant UI
+    const tempMsg = {
+      id: tempId,
+      sender: USER_NAME,
       senderId: USER_ID,
-      senderName: USER_NAME,
       role: USER_ROLE,
       userType: USER_TYPE,
+      text: fileUrl,
+      date: new Date(),
+      time: new Date().toLocaleTimeString("en-IN"),
+      seen: false,
+      me: true,
+      reactions: {}
+    };
 
-      message: fileUrl,
+    setMessages(prev => [...prev, tempMsg]);
+
+    // ✅ WEBSOCKET SEND
+    stompClient.publish({
+      destination: "/app/chat.send",
+      body: JSON.stringify({
+        tempId: tempId,
+        societyId: Number(SOCIETY_ID),
+        senderId: USER_ID,
+        senderName: USER_NAME,
+        role: USER_ROLE,
+        userType: USER_TYPE,
+        message: fileUrl   // ⭐ IMPORTANT
+      })
     });
 
-    fetchMessages();
-
   } catch (error) {
-
     console.error("Upload error:", error);
-
   }
-
 };
 
   const updateMessage = async () => {
