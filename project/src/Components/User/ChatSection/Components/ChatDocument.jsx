@@ -26,51 +26,41 @@ function ChatDocument({ onFileSelect, close }) {
 
   const streamRef = useRef(null);
 
-  /* CAMERA START */
+  /* ✅ NEW STATES (PREVIEW) */
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewType, setPreviewType] = useState(null);
+
+  /* ================= CAMERA START ================= */
 
   const startCamera = async () => {
-
     try {
-
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
       streamRef.current = stream;
-
       setOpenCamera(true);
 
       setTimeout(() => {
-
         if (videoRef.current) {
-
           videoRef.current.srcObject = stream;
-
         }
-
       }, 100);
 
-    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-
       alert("Camera access denied");
-
     }
-
   };
 
-  /* CAPTURE PHOTO */
+  /* ================= CAPTURE PHOTO ================= */
 
   const capturePhoto = () => {
 
     const video = videoRef.current;
-
     const canvas = canvasRef.current;
 
     canvas.width = video.videoWidth;
-
     canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext("2d");
-
     ctx.drawImage(video, 0, 0);
 
     canvas.toBlob((blob) => {
@@ -79,55 +69,67 @@ function ChatDocument({ onFileSelect, close }) {
         type: "image/png"
       });
 
-      if (onFileSelect) {
-
-        onFileSelect(file, "image");
-
-      }
-
-      if (close) close();
+      // 👉 direct send nahi, preview
+      setPreviewFile(file);
+      setPreviewType("photo");  // instead of "image"
 
     });
 
     stopCamera();
-
   };
 
-  /* STOP CAMERA */
+  /* ================= STOP CAMERA ================= */
 
   const stopCamera = () => {
-
     if (streamRef.current) {
-
       streamRef.current.getTracks().forEach(track => track.stop());
-
     }
-
     setOpenCamera(false);
-
   };
 
-  /* FILE HANDLE */
+  /* ================= FILE HANDLE ================= */
 
   const handleFile = (e, type) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const file = e.target.files[0];
+  // 🔥 differentiate image properly
+  if (type === "image" && file.type.startsWith("image")) {
+    setPreviewType("photo");   // 👈 CHANGE
+  } else {
+    setPreviewType(type);
+  }
 
-    if (!file) return;
+  setPreviewFile(file);
+  e.target.value = null;
+};
 
-    if (onFileSelect) {
+  /* ================= SEND FILE ================= */
 
-      onFileSelect(file, type);
+  const sendFile = () => {
+  if (onFileSelect && previewFile) {
 
-    }
+    // 🔥 FINAL TYPE CONTROL
+    const finalType =
+      previewType === "photo" ? "image" : previewType;
 
-    e.target.value = null;
+    onFileSelect(previewFile, finalType);
+  }
 
-    if (close) close();
+  setPreviewFile(null);
+  setPreviewType(null);
 
+  if (close) close();
+};
+
+  /* ================= CANCEL ================= */
+
+  const cancelPreview = () => {
+    setPreviewFile(null);
+    setPreviewType(null);
   };
 
-  /* MENU ITEMS */
+  /* ================= MENU ITEMS ================= */
 
   const menuItems = [
 
@@ -199,10 +201,11 @@ function ChatDocument({ onFileSelect, close }) {
 
     <>
 
+      {/* ================= MENU ================= */}
+
       <div className="w-64 bg-white rounded-2xl shadow-lg p-2">
 
         {/* DOCUMENT */}
-
         <input
           type="file"
           ref={docRef}
@@ -211,7 +214,6 @@ function ChatDocument({ onFileSelect, close }) {
         />
 
         {/* IMAGE / VIDEO */}
-
         <input
           type="file"
           ref={imageRef}
@@ -221,7 +223,6 @@ function ChatDocument({ onFileSelect, close }) {
         />
 
         {/* AUDIO */}
-
         <input
           type="file"
           ref={audioRef}
@@ -231,54 +232,31 @@ function ChatDocument({ onFileSelect, close }) {
         />
 
         {menuItems.map((item, index) =>
-
           item.divider ? (
-
             <div key={index} className="border-t my-2" />
-
           ) : (
-
             <div
               key={index}
               onClick={item.action}
               className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 cursor-pointer"
             >
-
               {item.icon}
-
-              <span className="text-sm">
-
-                {item.label}
-
-              </span>
-
+              <span className="text-sm">{item.label}</span>
             </div>
-
           )
-
         )}
 
       </div>
 
-      {/* CAMERA MODAL */}
+      {/* ================= CAMERA MODAL ================= */}
 
       {openCamera && (
-
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50">
 
-          <video
-            ref={videoRef}
-            autoPlay
-            className="w-96 rounded-lg"
-          />
-
-          <canvas
-            ref={canvasRef}
-            className="hidden"
-          />
+          <video ref={videoRef} autoPlay className="w-96 rounded-lg" />
+          <canvas ref={canvasRef} className="hidden" />
 
           <div className="flex gap-4 mt-4">
-
             <button
               onClick={capturePhoto}
               className="bg-green-500 text-white px-4 py-2 rounded"
@@ -292,17 +270,65 @@ function ChatDocument({ onFileSelect, close }) {
             >
               Close
             </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* ================= PREVIEW MODAL ================= */}
+
+      {previewFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-50">
+
+          {/* IMAGE */}
+          {previewType === "image" && previewFile.type.startsWith("image") && (
+            <img
+              src={URL.createObjectURL(previewFile)}
+              alt="preview"
+              className="max-h-[70%] rounded-lg"
+            />
+          )}
+
+          {/* DOCUMENT */}
+          {previewType === "photo" && (
+  <img
+    src={URL.createObjectURL(previewFile)}
+    alt="preview"
+    className="max-h-[70%] rounded-lg"
+  />
+)}
+
+          {/* AUDIO */}
+          {previewType === "audio" && (
+            <audio controls className="mt-4">
+              <source src={URL.createObjectURL(previewFile)} />
+            </audio>
+          )}
+
+          {/* ACTIONS */}
+          <div className="flex gap-4 mt-6">
+
+            <button
+              onClick={cancelPreview}
+              className="bg-gray-500 text-white px-6 py-2 rounded-full"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={sendFile}
+              className="bg-green-500 text-white px-6 py-2 rounded-full"
+            >
+              Send
+            </button>
 
           </div>
 
         </div>
-
       )}
 
     </>
-
   );
-
 }
 
 export default ChatDocument;

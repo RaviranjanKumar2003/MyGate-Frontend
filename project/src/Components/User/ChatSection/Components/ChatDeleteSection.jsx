@@ -22,31 +22,30 @@ function ChatDeleteSection({
   createdAt,
   refresh,
   startEdit,
-  me
+  me,
+  position
 }) {
+
+  const isMobile = window.innerWidth < 768;
 
   const [showDeleteBox, setShowDeleteBox] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   const SOCIETY_ID = localStorage.getItem("societyId");
-  const USER_ID = localStorage.getItem("userId");
+  const USER_ID = Number(localStorage.getItem("userId")); // ✅ FIX
 
   const reactions = ["👍","❤️","😂","😮","😢","🙏"];
 
-  /* ================= EDIT TIME CHECK ================= */
+  /* ================= TIME CHECK ================= */
 
-  const canEdit = () => {
-
-    if (!createdAt) return false;
-
-    const now = new Date();
-    const msgTime = new Date(createdAt);
-
-    const diffSeconds = (now - msgTime) / 1000;
-
-    return diffSeconds <= 60;
-
+  const getDiffSeconds = () => {
+    if (!createdAt) return 9999;
+    return (new Date() - new Date(createdAt)) / 1000;
   };
+
+  const canEdit = () => getDiffSeconds() <= 60;
+
+  const canDeleteForEveryone = () => getDiffSeconds() <= 60;
 
   /* ================= HARD DELETE ================= */
 
@@ -54,24 +53,23 @@ function ChatDeleteSection({
 
     if (!messageId) return;
 
-    try {
+    // ❌ block after 1 min
+    if (!canDeleteForEveryone()) {
+      alert("You can only delete within 1 minute");
+      return;
+    }
 
+    try {
       await api.delete(
-        `/society-chat/society/${SOCIETY_ID}/hard-delete/${messageId}`,
-        {
-          data: { senderId: USER_ID }
-        }
+        `/society-chat/society/${SOCIETY_ID}/hard-delete/${messageId}?senderId=${USER_ID}`
       );
 
       refresh();
       close();
 
     } catch (err) {
-
-      console.error("Hard delete error:", err);
-
+      console.error("Hard delete error:", err.response?.data || err.message);
     }
-
   };
 
   /* ================= SOFT DELETE ================= */
@@ -81,220 +79,190 @@ function ChatDeleteSection({
     if (!messageId) return;
 
     try {
-
       await api.put(
         `/society-chat/society/${SOCIETY_ID}/soft-delete/${messageId}`,
-        {
-          senderId: USER_ID
-        }
+        { senderId: USER_ID }
       );
 
       refresh();
       close();
 
     } catch (err) {
-
       console.error("Soft delete error:", err);
-
     }
-
   };
 
-  /* ================= SEND REACTION ================= */
+  /* ================= REACTION ================= */
 
   const handleReaction = async (emoji) => {
 
     try {
-
       await api.post("/reactions/react", {
-        messageId: messageId,
+        messageId,
         userId: USER_ID,
-        emoji: emoji
+        emoji
       });
 
-      refresh(); // reload messages
-      close();   // close menu
+      refresh();
+      close();
 
     } catch (err) {
-
       console.error("Reaction error:", err);
-
     }
 
     setShowReactionPicker(false);
-
   };
 
   return (
-
     <>
+      {/* ================= MENU ================= */}
 
-    {/* ================= MENU ================= */}
+      {!showDeleteBox && (
 
-    {!showDeleteBox && (
+        <div
+          className={
+            isMobile
+              ? "fixed bottom-0 left-0 w-full bg-white rounded-t-2xl shadow-xl z-50"
+              : "fixed w-64 bg-white rounded-xl shadow-xl border z-50"
+          }
+          style={!isMobile ? { top: position?.top, left: position?.left } : {}}
+        >
 
-      <div className="absolute right-10 top-10 w-64 bg-white rounded-xl shadow-xl border z-50">
+          {/* ================= REACTIONS ================= */}
 
-        {/* ================= REACTIONS ================= */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b relative">
 
-        <div className="flex justify-between items-center px-3 py-2 border-b relative">
+            {reactions.map((emoji, i) => (
+              <button
+                key={i}
+                onClick={() => handleReaction(emoji)}
+                className="text-xl hover:scale-125 transition"
+              >
+                {emoji}
+              </button>
+            ))}
 
-          {reactions.map((emoji, i) => (
-
-            <button
-              key={i}
-              onClick={() => handleReaction(emoji)}
-              className="text-xl hover:scale-125 transition"
-            >
-              {emoji}
+            <button onClick={() => setShowReactionPicker(!showReactionPicker)}>
+              <Plus size={18}/>
             </button>
 
-          ))}
+            {showReactionPicker && (
+              <div className="absolute top-12 right-0 z-50">
+                <EmojiPicker
+                  onEmojiClick={(e) => handleReaction(e.emoji)}
+                />
+              </div>
+            )}
+          </div>
 
-          {/* OPEN EMOJI PICKER */}
+          {/* ================= MENU OPTIONS ================= */}
 
-          <button
-            onClick={() => setShowReactionPicker(!showReactionPicker)}
-            className="text-xl"
-          >
-            <Plus size={18}/>
-          </button>
+          <div className="text-sm">
 
-          {/* EMOJI PICKER */}
+            <MenuItem icon={<Info size={18}/>} text="Message info" />
+            <MenuItem icon={<Reply size={18}/>} text="Reply" />
+            <MenuItem icon={<Copy size={18}/>} text="Copy" />
+            <MenuItem icon={<Forward size={18}/>} text="Forward" />
+            <MenuItem icon={<Pin size={18}/>} text="Pin" />
+            <MenuItem icon={<Star size={18}/>} text="Star" />
+            <MenuItem icon={<Plus size={18}/>} text="Add text to note" />
 
-          {showReactionPicker && (
+            <hr/>
 
-            <div className="absolute top-12 right-0 z-50">
+            <MenuItem icon={<CheckSquare size={18}/>} text="Select" />
 
-              <EmojiPicker
-                onEmojiClick={(emojiData) =>
-                  handleReaction(emojiData.emoji)
-                }
-              />
-
-            </div>
-
-          )}
-
-        </div>
-
-        {/* ================= MENU ================= */}
-
-        <div className="text-sm">
-
-          <MenuItem icon={<Info size={18}/>} text="Message info" />
-          <MenuItem icon={<Reply size={18}/>} text="Reply" />
-          <MenuItem icon={<Copy size={18}/>} text="Copy" />
-          <MenuItem icon={<Forward size={18}/>} text="Forward" />
-          <MenuItem icon={<Pin size={18}/>} text="Pin" />
-          <MenuItem icon={<Star size={18}/>} text="Star" />
-          <MenuItem icon={<Plus size={18}/>} text="Add text to note" />
-
-          <hr/>
-
-          <MenuItem icon={<CheckSquare size={18}/>} text="Select" />
-
-          {/* EDIT OPTION */}
-
-          {me && canEdit() && (
-
-            <div
-              onClick={() => {
+            {/* EDIT */}
+            {me && canEdit() && (
+              <div onClick={() => {
                 startEdit(messageId, messageText);
                 close();
-              }}
-            >
-              <MenuItem
-                icon={<Edit size={18}/>}
-                text="Edit"
-              />
+              }}>
+                <MenuItem icon={<Edit size={18}/>} text="Edit" />
+              </div>
+            )}
+
+            <hr/>
+
+            {/* DELETE */}
+            <div onClick={() => setShowDeleteBox(true)}>
+              <MenuItem icon={<Trash2 size={18}/>} text="Delete" danger />
             </div>
 
-          )}
-
-          <hr/>
-
-          <div onClick={() => setShowDeleteBox(true)}>
-            <MenuItem
-              icon={<Trash2 size={18}/>}
-              text="Delete"
-              danger
-            />
           </div>
 
         </div>
+      )}
 
-      </div>
+      {/* ================= DELETE CONFIRM ================= */}
 
-    )}
+      {showDeleteBox && (
 
-    {/* ================= DELETE CONFIRM ================= */}
+        <div
+          className={
+            isMobile
+              ? "fixed bottom-0 left-0 w-full bg-gray-100 rounded-t-2xl shadow-xl p-6 z-50"
+              : "fixed w-80 bg-gray-100 rounded-xl shadow-xl p-6 z-50"
+          }
+          style={!isMobile ? { top: position?.top, left: position?.left } : {}}
+        >
 
-    {showDeleteBox && (
+          <p className="text-lg mb-6">Delete message?</p>
 
-      <div className="absolute right-10 top-10 w-80 bg-gray-100 rounded-xl shadow-xl p-6 z-50">
+          <div className="flex flex-col items-end gap-4">
 
-        <p className="text-lg mb-6">Delete message?</p>
+            {/* ✅ DELETE FOR EVERYONE */}
+            {me && canDeleteForEveryone() && (
+              <button
+                onClick={deleteForEveryone}
+                className="border border-green-600 text-green-600 px-6 py-2 rounded-full"
+              >
+                Delete for everyone
+              </button>
+            )}
 
-        <div className="flex flex-col items-end gap-4">
+            {/* ⛔ AFTER 1 MIN SHOW INFO */}
+            {me && !canDeleteForEveryone() && (
+              <p className="text-xs text-gray-500">
+                You can only delete for everyone within 1 minute
+              </p>
+            )}
 
-          {me && (
-
+            {/* DELETE FOR ME */}
             <button
-              onClick={deleteForEveryone}
-              className="border border-green-600 text-green-600 px-6 py-2 rounded-full hover:bg-green-50"
+              onClick={deleteForMe}
+              className="border border-green-600 text-green-600 px-6 py-2 rounded-full"
             >
-              Delete for everyone
+              Delete for me
             </button>
 
-          )}
+            <button
+              onClick={() => setShowDeleteBox(false)}
+              className="border px-6 py-2 rounded-full"
+            >
+              Cancel
+            </button>
 
-          <button
-            onClick={deleteForMe}
-            className="border border-green-600 text-green-600 px-6 py-2 rounded-full hover:bg-green-50"
-          >
-            Delete for me
-          </button>
-
-          <button
-            onClick={() => setShowDeleteBox(false)}
-            className="border px-6 py-2 rounded-full hover:bg-gray-200"
-          >
-            Cancel
-          </button>
+          </div>
 
         </div>
-
-      </div>
-
-    )}
-
+      )}
     </>
-
   );
-
 }
 
 /* ================= MENU ITEM ================= */
 
 function MenuItem({ icon, text, danger, onClick }) {
-
   return (
-
     <div
       onClick={onClick}
       className={`flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100
       ${danger ? "text-red-500" : ""}`}
     >
-
       {icon}
-
       <span>{text}</span>
-
     </div>
-
   );
-
 }
 
 export default ChatDeleteSection;

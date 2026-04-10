@@ -75,9 +75,44 @@ function CommunityChat({ userProfile }) {
 
   const [isConnected, setIsConnected] = useState(false);
 
+  const [isMicHover, setIsMicHover] = useState(false);
+
   const [incomingCallData, setIncomingCallData] = useState(null);
 
   const [isAlone, setIsAlone] = useState(false);
+
+  const [menuPosition, setMenuPosition] = useState(null);
+
+  const pressTimer = useRef(null);
+
+  const openMenu = (msg) => {
+  const element = messageRefs.current[msg.id];
+  if (!element) return;
+
+  const rect = element.getBoundingClientRect();
+
+  const menuHeight = 300;
+  const menuWidth = 260;
+
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceRight = window.innerWidth - rect.right;
+
+  let top, left;
+
+  top = spaceBelow > menuHeight
+    ? rect.bottom
+    : rect.top - menuHeight;
+
+  left = spaceRight > menuWidth
+    ? rect.left
+    : rect.right - menuWidth;
+
+  setMenuPosition({ top, left });
+  setSelectedMessageId(msg.id);
+  setOpenDelete(true);
+};
+
+const messageRefs = useRef({});  // const openMenu 
 
   // 🔹 Helper function for ending a call safely
 const endCall = () => {
@@ -212,15 +247,11 @@ const openReactionUsers = async (messageId) => {
 
 /*file*/
 const [selectedFile, setSelectedFile] = useState(null);
-const [, setFileType] = useState(null);
+const [fileType, setFileType] = useState(null);
 
 const handleFileSelect = (file, type) => {
-
-  console.log("FILE SELECTED:", file);
-
   setSelectedFile(file);
-  setFileType(type);
-
+  setFileType(type);   // ✅ IMPORTANT
 };
 
   /* WEBSOCKET */
@@ -517,60 +548,53 @@ const handleFileSelect = (file, type) => {
 };
   /* FILE UPLOAD */
 
-const uploadFile = async (file) => {
-  console.log("FILE RECEIVED:", file);
+const uploadFile = async (file, type) => {
 
   const formData = new FormData();
   formData.append("file", file);
 
   try {
+
     const res = await api.post("/files/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
+      headers: { "Content-Type": "multipart/form-data" }
     });
 
-    const fileData = res.data;
-    const fileUrl = fileData.fileUrl;
+    const fileUrl = res.data.fileUrl;
 
-    console.log("File uploaded:", fileData);
-
-    // ✅ SAME AS sendMessage()
     const tempId = Date.now();
 
-    // ⭐ instant UI
+    // ⭐ UI message
     const tempMsg = {
       id: tempId,
       sender: USER_NAME,
       senderId: USER_ID,
-      role: USER_ROLE,
-      userType: USER_TYPE,
       text: fileUrl,
+      fileType: type,   // ✅ ADD THIS
       date: new Date(),
       time: new Date().toLocaleTimeString("en-IN"),
-      seen: false,
       me: true,
       reactions: {}
     };
 
     setMessages(prev => [...prev, tempMsg]);
 
-    // ✅ WEBSOCKET SEND
+    // ⭐ SEND TO BACKEND
     stompClient.publish({
       destination: "/app/chat.send",
       body: JSON.stringify({
-        tempId: tempId,
+        tempId,
         societyId: Number(SOCIETY_ID),
         senderId: USER_ID,
         senderName: USER_NAME,
         role: USER_ROLE,
         userType: USER_TYPE,
-        message: fileUrl   // ⭐ IMPORTANT
+        message: fileUrl,
+        fileType: type   // ✅ VERY IMPORTANT
       })
     });
 
-  } catch (error) {
-    console.error("Upload error:", error);
+  } catch (err) {
+    console.error(err);
   }
 };
 
@@ -597,367 +621,375 @@ const uploadFile = async (file) => {
     console.error("Update error:", err);
   }
 
-};
+ };
 
   let lastDate = "";
 
   return (
 
-    <div className="flex flex-col h-185 bg-gray-100 relative sm:h-157">
+  <div className="flex flex-col h-180  p-1 bg-gray-100 relative sm:h-157">
 
-      {/* HEADER */}
+   {/*======================================= CHAT HEADER ========================================= */}
 
-      <div className="bg-gray-200 flex items-center justify-between px-4 py-2 shadow">
+    <div className="bg-gray-200 flex items-center justify-between px-4 py-2 shadow fixed z-10 w-full sm:w-[80%]">
 
-        <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3">
 
-          {userProfile && (
-            <img
-              src={getProfileImage(userProfile.id)}
-              className="w-9 h-9 rounded-full object-cover"
-            />
-          )}
-
-          <div>
-            <p className="font-medium">{userProfile?.name}</p>
-            <p className="text-xs text-gray-500">Community Chat</p>
-          </div>
-
-        </div>
-
-        <div className="flex items-center gap-4">
-
-          {/* AUDIO CALL */}
-
-          <Phone
-  size={20}
-  className="cursor-pointer"
-  onClick={() => {
-
-  // ❌ connection check
-  if (!stompClient.connected) {
-    console.log("❌ Not connected yet");
-    return;
-  }
-
-  const room = `audio-${SOCIETY_ID}`;
-
-  stompClient.publish({
-    destination: "/app/start-call", // ⚠️ agar backend change kiya hai to yaha bhi change karo
-    body: JSON.stringify({
-      roomName: room,
-      callerName: USER_NAME,
-      type: "audio"
-    })
-  });
-
-  stompClient.publish({
-  destination: "/app/join-call",
-  body: JSON.stringify({
-    roomName: room,
-    callerName: USER_NAME
-  })
-});
-
-  playCallingRing();
-
-  setRoomName(room);
-  setCallType("audio");
-  setStartCall(true);
-  setIsAlone(false);
-}}
-/>
-
-          {/* VIDEO CALL */}
-
-          <Video
-  size={20}
-  className="cursor-pointer"
-  onClick={() => {
-
-  // ❌ connection check (VERY IMPORTANT)
-  if (!stompClient.connected) {
-    console.log("❌ Not connected yet");
-    return;
-  }
-
-  const room = `video-${SOCIETY_ID}`;
-
-  stompClient.publish({
-    destination: "/app/start-call", // ⚠️ backend change kiya ho to yaha bhi change karo
-    body: JSON.stringify({
-      roomName: room,
-      callerName: USER_NAME,
-      type: "video"
-    })
-  });
-
-  stompClient.publish({
-  destination: "/app/join-call",
-  body: JSON.stringify({
-    roomName: room,
-    callerName: USER_NAME
-  })
-});
-
-  playCallingRing();
-
-  setRoomName(room);
-  setCallType("video");         // onClose
-  setStartCall(true);
-  setIsAlone(false);
-
-}}
-/>
-          <Search size={20}/>
-
-          <MoreVertical
-            size={20}
-            className="cursor-pointer"
-            onClick={() => setOpenThreeDot(true)}
+        {userProfile && (
+          <img
+            src={getProfileImage(userProfile.id)}
+            className="w-9 h-9 rounded-full object-cover"
           />
+        )}
 
+        <div>
+          <p className="font-medium">{userProfile?.name}</p>
+          <p className="text-xs text-gray-500">Community Chat</p>
         </div>
 
       </div>
 
-      {/* CHAT */}
+      <div className="flex items-center gap-4">
 
-      <div
-        ref={chatContainerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
-      >
+        {/*~~~~~~~~~~~~~~~ AUDIO CALL ~~~~~~~~~~~~~ */}
 
-        {messages.map((msg) => {
+        <Phone
+          size={20}
+          className="cursor-pointer"
+          onClick={() => {
 
-          const currentDate = new Date(msg.date).toDateString();
-          const showDate = currentDate !== lastDate;
-          lastDate = currentDate;
+            // ❌ connection check
+            if (!stompClient.connected) {
+              console.log("❌ Not connected yet");
+              return;
+            }
 
-          return (
+            const room = `audio-${SOCIETY_ID}`;
 
-            <React.Fragment key={msg.id}>
+            stompClient.publish({
+               destination: "/app/start-call", // ⚠️ agar backend change kiya hai to yaha bhi change karo
+               body: JSON.stringify({
+                 roomName: room,
+                 callerName: USER_NAME,
+                 type: "audio"
+               })
+            });
 
-              {showDate && (
+            stompClient.publish({
+              destination: "/app/join-call",
+              body: JSON.stringify({
+                roomName: room,
+                callerName: USER_NAME
+              })
+            });
 
-                <div className="flex justify-center">
+            playCallingRing();
+            setRoomName(room);
+            setCallType("audio");
+            setStartCall(true);
+            setIsAlone(false);
+         }}
+       />
 
-                  <span className="bg-gray-300 text-gray-700 text-xs px-3 py-1 rounded-full">
-                    {formatDateLabel(msg.date)}
-                  </span>
+        {/*~~~~~~~~~~~~~~~~~~ VIDEO CALL ~~~~~~~~~~~~~~~ */}
+
+        <Video
+          size={20}
+          className="cursor-pointer"
+          onClick={() => {
+
+            if (!stompClient.connected) {
+              console.log("❌ Not connected yet");
+              return;
+            }
+
+            const room = `video-${SOCIETY_ID}`;
+
+            stompClient.publish({
+              destination: "/app/start-call", // ⚠️ backend change kiya ho to yaha bhi change karo
+              body: JSON.stringify({
+                roomName: room,
+                callerName: USER_NAME,
+                type: "video"
+              })
+            });
+
+            stompClient.publish({
+              destination: "/app/join-call",
+              body: JSON.stringify({
+                roomName: room,
+                callerName: USER_NAME
+              })
+            });
+
+            playCallingRing();
+            setRoomName(room);
+            setCallType("video");         // onClose
+            setStartCall(true);
+            setIsAlone(false);
+
+          }}
+       />
+        <Search size={20}/>
+
+        <MoreVertical
+          size={20}
+          className="cursor-pointer"
+          onClick={() => setOpenThreeDot(true)}
+        />
+
+      </div>
+    </div>
+
+    {/*================================ CHAT HERO ============================= */}
+
+    <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 mt-2 sm:mb-4 space-y-4">
+
+      {messages.map((msg) => {
+
+        const currentDate = new Date(msg.date).toDateString();
+        const showDate = currentDate !== lastDate;
+        lastDate = currentDate;
+
+        return (
+
+        <React.Fragment key={msg.id}>
+
+          {showDate && (
+
+            <div className="flex justify-center">
+
+              <span className="bg-gray-300 text-gray-700 text-xs px-3 py-1 rounded-full">
+                {formatDateLabel(msg.date)}
+              </span>
+
+            </div>
+          )}
+
+          <div
+            ref={(el) => (messageRefs.current[msg.id] = el)}
+            className={`flex ${msg.me ? "justify-end" : "justify-start"}`}
+            onTouchStart={() => {
+                pressTimer.current = setTimeout(() => {
+                  openMenu(msg);
+                }, 500);
+            }}
+
+            onTouchEnd={() => {
+              clearTimeout(pressTimer.current);
+            }}
+
+            onTouchMove={() => {
+               clearTimeout(pressTimer.current);
+            }}
+
+            onMouseEnter={() => setHoveredMsgId(msg.id)}
+            onMouseLeave={() => setHoveredMsgId(null)}
+          >
+
+            {!msg.me && (
+              <img src={getProfileImage(msg.senderId)} className="w-8 h-8 rounded-full mr-2"/>
+            )}
+
+            <div className="relative">
+
+              {/* Hover Icons */}
+
+              {hoveredMsgId === msg.id && (
+
+                <div className={`absolute -top-2 flex gap-1 ${msg.me ? "-left-16" : "-right-16"}`}>
+                      
+                  <button
+                      className="bg-white shadow p-1 rounded-full"
+                      onClick={() => setShowEmoji(true)}>😀
+                  </button>
+
+                  <button
+                    className="bg-white shadow p-1 rounded-full"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const menuHeight = 300;
+                      const menuWidth = 260;
+                      const spaceBelow = window.innerHeight - rect.bottom;
+                      const spaceRight = window.innerWidth - rect.right;
+                      let top, left;
+
+                      // vertical
+                      if (spaceBelow > menuHeight) {
+                        top = rect.bottom;
+                      } else {
+                        top = rect.top - menuHeight;
+                      }
+
+                       // horizontal
+                      if (spaceRight > menuWidth) {
+                         left = rect.left;
+                      } else {
+                        left = rect.right - menuWidth;
+                      }
+
+                      setMenuPosition({ top, left });
+                      setSelectedMessageId(msg.id);
+                      setOpenDelete(true);
+                    }}>
+                    <ChevronDown size={16}/>
+                  </button>
 
                 </div>
 
               )}
 
-              <div
-                className={`flex ${msg.me ? "justify-end" : "justify-start"}`}
-                onMouseEnter={() => setHoveredMsgId(msg.id)}
-                onMouseLeave={() => setHoveredMsgId(null)}
-              >
+              <div className={`max-w-full px-4 py-2 rounded-xl shadow text-sm ${msg.me ? "bg-green-500 text-white" : "bg-white"}`}>
 
                 {!msg.me && (
+                  <p className="text-xs font-semibold text-indigo-600">
 
-                  <img
-                    src={getProfileImage(msg.senderId)}
-                    className="w-8 h-8 rounded-full mr-2"
-                  />
+                    {msg.sender}
+                      <span className="ml-2 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
+                        {msg.userType}
+                      </span>
+                  </p>
 
                 )}
 
-                <div className="relative">
+               <div className="flex flex-col">
 
-                  {/* Hover Icons */}
+  {msg.text.startsWith("/uploads/") ? (
 
-                  {hoveredMsgId === msg.id && (
+    msg.fileType === "image" ? (
 
-                    <div className={`absolute -top-2 flex gap-1 ${msg.me ? "-left-16" : "-right-16"}`}>
-                      
-
-                      <button
-                        className="bg-white shadow p-1 rounded-full"
-                        onClick={() => setShowEmoji(true)}
-                      >
-                        😀
-                      </button>
-
-                      <button
-                        className="bg-white shadow p-1 rounded-full"
-                        onClick={() => {
-                        setSelectedMessageId(msg.id);
-                        setOpenDelete(true);
-                        }}
-                      >
-                        <ChevronDown size={16}/>
-                      </button>
-
-                    </div>
-
-                  )}
-
-                  <div
-                    className={`max-w-full px-4 py-2 rounded-xl shadow text-sm
-                    ${msg.me ? "bg-green-500 text-white" : "bg-white"}`}
-                  >
-
-                    {!msg.me && (
-
-                      <p className="text-xs font-semibold text-indigo-600">
-
-                        {msg.sender}
-
-                        <span className="ml-2 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
-                          {msg.userType}
-                        </span>
-
-                      </p>
-
-                    )}
-                    <div className="flex">
-                     {msg.text.startsWith("/uploads/") ? (
-                      
-
-  <a
-  href={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
-  target="_blank"
-  download
-  className="text-blue-200 underline"
->
-    📎 Download File
-  </a>
-
-) : msg.text === "This message was deleted" ? (
-
-  <div className="flex items-center gap- text-[#f0e7e7] italic text-lg">
-    <Ban size={18} />
-    <span>This message was deleted</span>
-  </div>
-
-) : (
-
-  <p>{msg.text}</p>
-
-)}
-                      {/* ⭐ REACTIONS */}
-
-
-
-                    <div className="flex justify-end items-center gap-1 mt-4 ml-1">
-
-                      <span className="text-[10px] opacity-70">
-                        {msg.time}
-                      </span>
-
-                      {msg.me && (
-                        msg.seen
-                          ? <CheckCheck size={14}/>
-                          : <Check size={14}/>
-                      )}
-
-                    </div>
-                    
-                    </div>
-                    
-                    
-
-                  </div>
-                  {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-
-  <div className="flex gap-1 flex-wrap justify-end">
-
-  {Object.entries(msg.reactions).map(([emoji, count]) => (
-
-    <span
-      key={emoji}
-      onClick={() => openReactionUsers(msg.id)}
-      className="bg-gray-200 text-xs px-2 py-0.5 rounded-full cursor-pointer"
-    >
-      {emoji} {count}
-    </span>
-
-  ))}
-
-</div>
-
-)}
-{showReactionUsers && (() => {
-
-const sortedReactionUsers = [...reactionUsers].sort((a, b) => {
-  if (a.userId == USER_ID) return -1;
-  if (b.userId == USER_ID) return 1;
-  return 0;
-});
-
-const filteredUsers =
-  selectedEmoji === "ALL"
-    ? sortedReactionUsers
-    : sortedReactionUsers.filter(u => u.emoji === selectedEmoji);
-
-return (
-
-<div className="fixed inset-0 flex items-center justify-center z-50 ">
-
-  <div className="bg-white w-80 rounded-xl p-4">
-
-    {/* TOP FILTER */}
-
-    <div className="flex items-center justify-between mb-3">
-
-      <div className="flex gap-2 flex-wrap">
-
-        <span
-          onClick={() => setSelectedEmoji("ALL")}
-          className={`px-2 py-1 rounded-full text-sm cursor-pointer
-          ${selectedEmoji === "ALL" ? "bg-green-500 text-white" : "bg-gray-200"}`}
-        >
-          All {reactionUsers.length}
-        </span>
-
-        {Object.entries(emojiCounts).map(([emoji, count]) => (
-
-          <span
-            key={emoji}
-            onClick={() => setSelectedEmoji(emoji)}
-            className={`px-2 py-1 rounded-full text-sm cursor-pointer
-            ${selectedEmoji === emoji ? "bg-green-500 text-white" : "bg-gray-200"}`}
-          >
-            {emoji} {count}
-          </span>
-
-        ))}
-
-      </div>
-
-      {/* EMOJI ICON */}
-
-      <button
-        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-        className="text-xl px-0.9 py-0.9 rounded-full  border border-[#474646] cursor-pointer"
-      >
-        😀<span className="absolute  bg-green-500 text-black text-[10px] w-4 h-4 flex items-center justify-center -mt-8 ml-5 rounded-full">
-    +
-  </span>
-      </button>
-
-    </div>
-
-    {/* EMOJI PICKER */}
-
-    {showEmojiPicker ? (
-
-      <div className="w-70">
-  <EmojiPicker
-    height={300}
-    width="100%"
-    onEmojiClick={(e) => {
-      updateReaction(e.emoji);
-      setShowEmojiPicker(false);
-    }}
-  />
-</div>
+      // ✅ IMAGE PREVIEW (WhatsApp style)
+      <img
+        src={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
+        alt="chat-img"
+        className="max-w-55 rounded-lg cursor-pointer"
+      />
 
     ) : (
+
+      // ✅ DOCUMENT / OTHER FILE
+      <a
+        href={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
+        target="_blank"
+        download
+        className="text-blue-200 underline"
+      >
+        📎 Download File
+      </a>
+
+    )
+
+  ) : msg.text === "This message was deleted" ? (
+
+    <div className="flex items-center text-[#f0e7e7] italic text-sm gap-1">
+      <Ban size={16} />
+      <span>This message was deleted</span>
+    </div>
+
+  ) : (
+
+    <p>{msg.text}</p>
+
+  )}
+
+  {/* ⭐ TIME + TICKS */}
+  <div className="flex justify-end items-center gap-1 mt-1">
+
+    <span className="text-[10px] opacity-70">
+      {msg.time}
+    </span>
+
+    {msg.me && (
+      msg.seen
+        ? <CheckCheck size={14}/>
+        : <Check size={14}/>
+    )}
+
+  </div>
+
+</div>
+                </div>
+                {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                  <div className="flex gap-1 flex-wrap justify-end">
+
+                     {Object.entries(msg.reactions).map(([emoji, count]) => (
+                        <span key={emoji} onClick={() => openReactionUsers(msg.id)} className="bg-gray-200 text-xs px-2 py-0.5 rounded-full cursor-pointer" >
+                          {emoji} {count}
+                        </span>
+                      ))}
+                  </div>
+
+                )}
+
+                {showReactionUsers && (() => {
+
+                  const sortedReactionUsers = [...reactionUsers].sort((a, b) => {
+                  if (a.userId == USER_ID) return -1;
+                  if (b.userId == USER_ID) return 1;
+                    return 0;
+                  });
+
+                 const filteredUsers =
+                 selectedEmoji === "ALL"
+                 ? sortedReactionUsers
+                 : sortedReactionUsers.filter(u => u.emoji === selectedEmoji);
+                return (
+
+                <div className="fixed inset-0 flex items-center justify-center z-50 ">
+
+                  <div className="bg-white w-80 rounded-xl p-4">
+
+                     {/* TOP FILTER */}
+                     <div className="flex items-center justify-between mb-3">
+                        <div className="flex gap-2 flex-wrap">
+                          <span
+                            onClick={() => setSelectedEmoji("ALL")}
+                            className={`px-2 py-1 rounded-full text-sm cursor-pointer
+                            ${selectedEmoji === "ALL" ? "bg-green-500 text-white" : "bg-gray-200"}`}>
+                            All {reactionUsers.length}
+                          </span>
+
+                          {Object.entries(emojiCounts).map(([emoji, count]) => (
+
+                            <span
+                              key={emoji}
+                              onClick={() => setSelectedEmoji(emoji)}
+                              className={`px-2 py-1 rounded-full text-sm cursor-pointer
+                              ${selectedEmoji === emoji ? "bg-green-500 text-white" : "bg-gray-200"}`}>
+                              {emoji} {count}
+                            </span>
+
+                          ))}
+
+                        </div>
+
+                          {/* EMOJI ICON */}
+                        <button
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className="text-xl px-0.9 py-0.9 rounded-full  border border-[#474646] cursor-pointer">
+                          😀<span className="absolute  bg-green-500 text-black text-[10px] w-4 h-4 flex items-center justify-center -mt-8 ml-5 rounded-full">
+                              +
+                            </span>
+                        </button>
+
+                      </div>
+
+                         {/* EMOJI PICKER */}
+
+       {showEmojiPicker ? (
+
+         <div className="w-70">
+      <EmojiPicker
+       height={300}
+       width="100%"
+       onEmojiClick={(e) => {
+         updateReaction(e.emoji);
+         setShowEmojiPicker(false);
+       }}
+      />
+     </div>
+
+      ) : (
 
       <div className="max-h-60 overflow-y-auto">
 
@@ -1011,22 +1043,22 @@ return (
 
       </div>
 
-    )}
+       )}
 
-    <button
-      onClick={() => setShowReactionUsers(false)}
-      className="mt-4 w-full bg-gray-200 py-2 rounded"
-    >
-      Close
-    </button>
+       <button
+          onClick={() => setShowReactionUsers(false)}
+         className="mt-4 w-full bg-gray-200 py-2 rounded"
+       >
+         Close
+       </button>
 
-  </div>
+      </div>
 
-</div>
+       </div>
 
-);
+              );
 
-})()}
+         })()}
 
                 </div>
 
@@ -1046,7 +1078,7 @@ return (
 
       {showEmoji && (
 
-        <div ref={emojiRef} className="absolute bottom-20 right-5">
+        <div ref={emojiRef} className="absolute bottom-20 ">
           <EmojiPicker onEmojiClick={onEmojiClick}/>
         </div>
 
@@ -1055,119 +1087,128 @@ return (
       {/* SCROLL BUTTON */}
 
       {showScrollBtn && (
-
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-20 right-5 bg-green-500 text-white p-2 rounded-full shadow-lg"
-        >
+          className="absolute bottom-20 right-5 bg-green-500 text-white p-2 rounded-full shadow-lg">
           <ChevronDown size={18}/>
         </button>
-
       )}
 
-      {/* INPUT */}
+      {/*========================== INPUT ======================================*/}
       
 
-      <div className="bg-white border-t flex items-center gap-2 px-3 py-2">
+      <div className="bg-[#a5a2a2] flex items-center gap-2 px-3 py-2  rounded-full shadow-2xs text-white fixed z-10 bottom-2 w-full sm:w-[80%]">
 
+        <Plus className="cursor-pointer" onClick={() => setOpenDocs(true)}/>
 
-        <Plus
-          className="cursor-pointer"
-          onClick={() => setOpenDocs(true)}
-        />
+        <Smile className="cursor-pointer" onClick={() => setShowEmoji(!showEmoji)}/>
 
-       
-
-        <input
-          type="text"
-          placeholder="Type a message"
-          className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none"
-          value={
-  selectedFile
-    ? `📎 ${selectedFile.name}`
-    : editingMessageId
-    ? editingText
-    : message
-}
-          onChange={(e) => {
-  if (editingMessageId) {
-    setEditingText(e.target.value);   // ⭐ ADDED
-  } else {
-    setMessage(e.target.value);
+        <textarea
+  placeholder="Type a message"
+  rows={1}
+  className="flex-1 px-4 py-2 text-sm focus:outline-none resize-none"
+  value={
+    selectedFile
+      ? `📎 ${selectedFile.name}`
+      : editingMessageId
+      ? editingText
+      : message
   }
-}}
-        />
-
-        <Smile
-          className="cursor-pointer"
-          onClick={() => setShowEmoji(!showEmoji)}
-        />
-
-       {message.trim() || selectedFile ? (
-
-  <button
-    onClick={() => {
+  onChange={(e) => {
+    if (editingMessageId) {
+      setEditingText(e.target.value);
+    } else {
+      setMessage(e.target.value);
+    }
+  }}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
 
       if (selectedFile) {
-        uploadFile(selectedFile);
+        uploadFile(selectedFile, fileType);
         setSelectedFile(null);
-      }
-
-      else if (editingMessageId) {
+        setFileType(null);
+      } else if (editingMessageId) {
         updateMessage();
-      }
-
-      else {
+      } else {
         sendMessage();
       }
+    }
+  }}
+/>
 
-    }}
-    className="bg-green-500 text-white p-2 rounded-full"
+        {message.trim() || selectedFile ? (
+          <button
+            onClick={() => {
+              if (selectedFile) {
+  uploadFile(selectedFile, fileType);  // ✅ type pass karo
+  setSelectedFile(null);
+  setFileType(null);
+}
+              else if (editingMessageId) {
+                updateMessage();
+              }
+              else {
+                sendMessage();
+              }
+            }}
+            className="bg-green-500 text-white p-2 rounded-full">
+            <Send size={18}/>
+          </button>
+          ) : (
+           <button
+  onMouseEnter={() => setIsMicHover(true)}
+  onMouseLeave={() => setIsMicHover(false)}
+  className="rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 hover:bg-green-500"
+  style={{
+    width: "40px",   // 🔥 fixed container
+    height: "40px"
+  }}
+>
+  <div
+    className={`transition-all duration-200 ${
+      isMicHover ? "scale-125" : "scale-100"
+    }`}
   >
-    <Send size={18}/>
-  </button>
-
-) : (
-
-  <button className="bg-green-500 text-white p-2 rounded-full">
-    <Mic size={18}/>
-  </button>
-
-)}
+    <Mic
+      size={isMicHover ? 24 : 20}   // ✅ size change allowed now
+      className={isMicHover ? "text-white" : "text-black"}
+    />
+  </div>
+</button>
+        )}
 
       </div>
 
-      {/* POPUPS */}
-
+  {/*==================== POPUPS */}
       {openDelete && (
-  <div ref={deleteRef}>
-    <ChatDeleteSection
-  messageId={selectedMessageId}
-  messageText={messages.find(m => m.id === selectedMessageId)?.text}
-  createdAt={messages.find(m => m.id === selectedMessageId)?.date}
-  me={messages.find(m => m.id === selectedMessageId)?.me}   // ⭐ ADD THIS
-  refresh={fetchMessages}
-  close={() => setOpenDelete(false)}
-  startEdit={(id, text) => {
-    setEditingMessageId(id);
-    setEditingText(text);
-    setMessage(text);
-  }}
-/>
-  </div>
-)}
+        <div ref={deleteRef} className="">
+          <ChatDeleteSection
+            position={menuPosition}   // 👈 ADD THIS
+            messageId={selectedMessageId}
+            messageText={messages.find(m => m.id === selectedMessageId)?.text}
+            createdAt={messages.find(m => m.id === selectedMessageId)?.date}
+            me={messages.find(m => m.id === selectedMessageId)?.me}
+            refresh={fetchMessages}
+            close={() => setOpenDelete(false)}
+            startEdit={(id, text) => {
+              setEditingMessageId(id);
+              setEditingText(text);
+              setMessage(text);
+            }}
+          />
+       </div>
+      )}
 
       {openDocs && (
-  <div
-    ref={docRef}
-    className="absolute bottom-14 left-0 z-50"
-  >
-    <ChatDocument
-  onFileSelect={handleFileSelect}
-  close={() => setOpenDocs(false)}
-/>
-  </div>
-)}
+        <div ref={docRef} className="absolute bottom-14 left-0 z-50">
+          <ChatDocument
+            onFileSelect={handleFileSelect} 
+            close={() => setOpenDocs(false)}
+          />
+        </div>
+      )}
 
       {openThreeDot && (
         <div ref={threeDotRef}>
@@ -1179,82 +1220,72 @@ return (
       {/* VIDEO CALL */}
 
       {startCall && callType === "video" && (
-  <ChatVideoCall
-    roomName={roomName}
-    onClose={endCall} // ✅ safe call end
-  />
-)}
+        <ChatVideoCall
+          roomName={roomName}
+          onClose={endCall} // ✅ safe call end
+        />
+      )}
 
-{startCall && callType === "audio" && (
-  <ChatAudioCall
-    roomName={roomName}
-    onClose={endCall} // ✅ safe call end
-  />
-)}
+      {startCall && callType === "audio" && (
+        <ChatAudioCall
+          roomName={roomName}
+          onClose={endCall} // ✅ safe call end
+        />
+      )}
 
-{isAlone && startCall && (
-  <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-4 py-2 rounded z-50">
-    You are the only participant
-  </div>
-)}
+      {isAlone && startCall && (
+        <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-4 py-2 rounded z-50">
+          You are the only participant
+        </div>
+      )}
 
       {/* INCOMING CALL */}
 
       {incomingCall && (
 
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-
           <div className="bg-white p-6 rounded-xl text-center">
-
             <h2 className="text-lg font-semibold mb-4">
               Incoming Call
             </h2>
-
             <button
               onClick={() => {
-
-  if (!stompClient.connected) return;
-
-  stompClient.publish({
-    destination: "/app/join-call",
-    body: JSON.stringify({
-      roomName: incomingCallData?.roomName,
-      callerName: USER_NAME
-    })
-  });
-
-  setRoomName(incomingCallData?.roomName); // ⭐ IMPORTANT
-  setCallType(incomingCallData?.type); // ⭐ ADD THIS
-  stopRingtone();
-  setIncomingCall(false);
-  setStartCall(true);
-  setIsAlone(false);
-
-}}
+                if (!stompClient.connected) return;
+                  stompClient.publish({
+                    destination: "/app/join-call",
+                    body: JSON.stringify({
+                      roomName: incomingCallData?.roomName,
+                      callerName: USER_NAME
+                    })
+                 });
+                 setRoomName(incomingCallData?.roomName); // ⭐ IMPORTANT
+                 setCallType(incomingCallData?.type); // ⭐ ADD THIS
+                 stopRingtone();
+                 setIncomingCall(false);
+                 setStartCall(true);
+                 setIsAlone(false);
+                }}
               className="bg-green-500 text-white px-4 py-2 rounded mr-3"
-            >
+              >
               Accept
             </button>
 
             <button
-             onClick={() => {
-
-  if (stompClient.connected) {
-    stompClient.publish({
-      destination: "/app/end-call",
-      body: JSON.stringify({
-        roomName: incomingCallData?.roomName,
-        callerName: USER_NAME
-      })
-    });
-  }
-
-  stopRingtone();
-  setIncomingCall(false);
-
-}}
+              onClick={() => {
+                if (stompClient.connected) {
+                  stompClient.publish({
+                     destination: "/app/end-call",
+                      body: JSON.stringify({
+                        roomName: incomingCallData?.roomName,
+                        callerName: USER_NAME
+                      })
+                  });
+                }
+                stopRingtone();
+                setIncomingCall(false);
+              }}
               className="bg-red-500 text-white px-4 py-2 rounded"
-            >
+              >
               Reject
             </button>
 
@@ -1272,8 +1303,6 @@ return (
 
   </div>
   );
-
-  
 
 }
 
