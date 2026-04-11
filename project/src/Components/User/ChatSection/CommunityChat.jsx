@@ -73,7 +73,7 @@ function CommunityChat({ userProfile }) {
   const incomingRef = useRef(null);
   const callingRef = useRef(null);
 
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);  // startsWith
 
   const [isMicHover, setIsMicHover] = useState(false);
 
@@ -276,22 +276,23 @@ const handleFileSelect = (file, type) => {
         if (filtered.some(m => m.id === data.id)) return filtered;
 
         return [...filtered, {
-          id: data.id,
-          sender: data.senderName,
-          senderId: data.senderId,
-          role: data.role,
-          userType: data.userType || "Member",
-          text: data.message,
-          date: new Date(data.createdAt),
-          time: new Date(data.createdAt).toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true
-          }),
-          seen: data.seen || false,
-          me: data.senderId == USER_ID,
-          reactions: data.reactions || {}
-        }];
+  id: data.id,
+  sender: data.senderName,
+  senderId: data.senderId,
+  role: data.role,
+  userType: data.userType || "Member",
+  text: data.message,
+  fileType: data.fileType,   // ⭐⭐⭐ MUST
+  date: new Date(data.createdAt),
+  time: new Date(data.createdAt).toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  }),
+  seen: data.seen || false,
+  me: data.senderId == USER_ID,
+  reactions: data.reactions || {}
+}];
       });
 
     });
@@ -395,24 +396,22 @@ const handleFileSelect = (file, type) => {
   const dateObj = new Date(msg.createdAt);
 
   return {
-    id: msg.id,
-    sender: msg.senderName,
-    senderId: msg.senderId,
-    role: msg.role,
-    userType: msg.userType || "Member",
-    text: msg.message,
-    date: dateObj,
-    time: dateObj.toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit"
-    }),
-    seen: msg.seen || false,
-    me: msg.senderId == USER_ID,
-
-    // ⭐ ADD THIS
-    reactions: msg.reactions || {}
-
-  };
+  id: msg.id,
+  sender: msg.senderName,
+  senderId: msg.senderId,
+  role: msg.role,
+  userType: msg.userType || "Member",
+  text: msg.message,
+  fileType: msg.fileType,   // ⭐⭐⭐ MUST
+  date: dateObj,
+  time: dateObj.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }),
+  seen: msg.seen || false,
+  me: msg.senderId == USER_ID,
+  reactions: msg.reactions || {}
+};
 
 });
 
@@ -854,43 +853,57 @@ const uploadFile = async (file, type) => {
 
                <div className="flex flex-col">
 
-  {msg.text.startsWith("/uploads/") ? (
+  {msg.fileType ? (
 
-    msg.fileType === "image" ? (
+  msg.fileType === "image" ? (
 
-      // ✅ IMAGE PREVIEW (WhatsApp style)
-      <img
-        src={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
-        alt="chat-img"
-        className="max-w-55 rounded-lg cursor-pointer"
-      />
+    <img
+      src={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
+      className="max-w-55 rounded-lg"
+    />
 
-    ) : (
+  ) : msg.fileType === "video" ? (
 
-      // ✅ DOCUMENT / OTHER FILE
-      <a
-        href={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
-        target="_blank"
-        download
-        className="text-blue-200 underline"
-      >
-        📎 Download File
-      </a>
+    <video
+      src={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
+      controls
+      className="max-w-55 rounded-lg"
+    />
 
-    )
+  ) : msg.fileType === "audio" ? (
 
-  ) : msg.text === "This message was deleted" ? (
-
-    <div className="flex items-center text-[#f0e7e7] italic text-sm gap-1">
-      <Ban size={16} />
-      <span>This message was deleted</span>
-    </div>
+    <audio controls>
+      <source src={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`} />
+    </audio>
 
   ) : (
 
-    <p>{msg.text}</p>
+    <a
+      href={`${BASE_URL}/files/download/${msg.text.split("/").pop()}`}
+      download
+      className="text-blue-200 underline"
+    >
+      📎 Download File
+    </a>
 
-  )}
+  )
+
+) : msg.text === "This message was deleted" ? (
+
+  <div
+    className={`flex items-center italic text-sm gap-1 ${
+      msg.me ? "text-white/70" : "text-gray-400"
+    }`}
+  >
+    <Ban size={16} />
+    <span>This message was deleted</span>
+  </div>
+
+) : (
+
+  <p>{msg.text}</p>
+
+)}
 
   {/* ⭐ TIME + TICKS */}
   <div className="flex justify-end items-center gap-1 mt-1">
@@ -1307,3 +1320,6 @@ const uploadFile = async (file, type) => {
 }
 
 export default CommunityChat;    
+
+
+// const type

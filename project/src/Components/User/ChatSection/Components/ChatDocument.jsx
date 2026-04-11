@@ -93,13 +93,19 @@ function ChatDocument({ onFileSelect, close }) {
   const file = e.target.files[0];
   if (!file) return;
 
-  // 🔥 differentiate image properly
-  if (type === "image" && file.type.startsWith("image")) {
-    setPreviewType("photo");   // 👈 CHANGE
+  let finalType;
+
+  if (file.type.startsWith("image")) {
+    finalType = "photo";
+  } else if (file.type.startsWith("video")) {
+    finalType = "video";   // ✅ FIX
+  } else if (file.type.startsWith("audio")) {
+    finalType = "audio";
   } else {
-    setPreviewType(type);
+    finalType = "doc";
   }
 
+  setPreviewType(finalType);
   setPreviewFile(file);
   e.target.value = null;
 };
@@ -219,7 +225,7 @@ function ChatDocument({ onFileSelect, close }) {
           ref={imageRef}
           className="hidden"
           accept="image/*,video/*"
-          onChange={(e) => handleFile(e, "image")}
+          onChange={(e) => handleFile(e, "media")}
         />
 
         {/* AUDIO */}
@@ -280,23 +286,33 @@ function ChatDocument({ onFileSelect, close }) {
       {previewFile && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-50">
 
-          {/* IMAGE */}
+          {/* IMAGE
           {previewType === "image" && previewFile.type.startsWith("image") && (
             <img
               src={URL.createObjectURL(previewFile)}
               alt="preview"
               className="max-h-[70%] rounded-lg"
             />
-          )}
+          )} */}
 
           {/* DOCUMENT */}
           {previewType === "photo" && (
-  <img
-    src={URL.createObjectURL(previewFile)}
-    alt="preview"
-    className="max-h-[70%] rounded-lg"
-  />
-)}
+            <img
+              src={URL.createObjectURL(previewFile)}
+              alt="preview"
+              className="max-h-[70%] rounded-lg"
+           />
+          )}
+
+          {/* VIDEO */}
+          {previewType === "video" && (
+            <video
+              src={URL.createObjectURL(previewFile)}
+              controls
+              className="max-h-[70%] rounded-lg"
+            />
+          )}
+          
 
           {/* AUDIO */}
           {previewType === "audio" && (
