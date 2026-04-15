@@ -1,83 +1,64 @@
-import { useEffect } from "react";
-import { JitsiMeeting } from "@jitsi/react-sdk";
+import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
+import { useEffect, useRef } from "react";
 
-function ChatVideoCall({ roomName, onClose }) {
+const ChatVideoCall = ({ roomName, onClose }) => {
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
 
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [onClose]);
+    console.log("ROOM:", roomName);
 
-  const finalRoomName = `room-${roomName}`;
+    if (!roomName) {
+      console.error("❌ roomName missing");
+      return;
+    }
 
-  return (
-    <div className="fixed inset-0 bg-black z-50">
+    const appID = 605040740;
+    const serverSecret = "YOUR_NEW_SECRET_HERE";
 
-      {/* END CALL BUTTON */}
-      <div className="absolute top-3 right-3 z-50">
-        <button
-          onClick={onClose}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-        >
-          End Call
-        </button>
-      </div>
+    if (!appID || !serverSecret) {
+      console.error("❌ Zego credentials missing");
+      return;
+    }
 
-      <JitsiMeeting
-        roomName={finalRoomName}
+    const userID = String(Date.now());
+    const userName = "User_" + userID;
 
-        configOverwrite={{
-          prejoinPageEnabled: false,
-          startWithAudioMuted: false,
-          startWithVideoMuted: false,
-          disableDeepLinking: true,
-        }}
+    let kitToken;
 
-        interfaceConfigOverwrite={{
-          SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false,
-          DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
-        }}
+    try {
+      kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+        appID,
+        serverSecret,
+        roomName,
+        userID,
+        userName
+      );
+    } catch (err) {
+      console.error("❌ Token generation failed:", err);
+      return;
+    }
 
-        userInfo={{
-          displayName: "User",
-        }}
+    if (!kitToken) {
+      console.error("❌ kitToken is null/undefined");
+      return;
+    }
 
-        getIFrameRef={(iframe) => {
-          iframe.style.height = "100vh";
-          iframe.style.width = "100%";
-        }}
+    
 
-        onApiReady={(api) => {
+    const zp = ZegoUIKitPrebuilt.create(kitToken);
 
-          console.log("🔥 API READY");
+    zp.joinRoom({
+      container: containerRef.current,
+      scenario: {
+        mode: ZegoUIKitPrebuilt.GroupCall,
+      },
+      onLeaveRoom: onClose,
+    });
 
-          // ✅ Force lobby off
-          try {
-            api.executeCommand("toggleLobby", false);
-          // eslint-disable-next-line no-unused-vars
-          } catch (e) { /* empty */ }
+  }, [roomName]);
 
-          // ✅ Auto join confirmation
-          api.on("videoConferenceJoined", () => {
-  console.log("✅ Joined");
-});
-
-          // 🔴 Close on leave
-          api.on("videoConferenceJoined", () => {
-  console.log("✅ Joined");
-});
-        }}
-      />
-
-    </div>
-  );
-}
+  return <div ref={containerRef} style={{ width: "100%", height: "100vh" }} />;
+};
 
 export default ChatVideoCall;

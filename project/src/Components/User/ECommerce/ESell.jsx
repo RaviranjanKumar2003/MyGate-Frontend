@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../api/axios";
 
+import stompClient from "../../../socket"; // path apne project ke hisaab se
+import { toast } from "react-toastify";
+
 function ESell() {
   const sellerId = Number(localStorage.getItem("userId"));
   const societyId = localStorage.getItem("societyId");
@@ -163,17 +166,17 @@ function ESell() {
 
   /* ================= ACCEPT / REJECT OFFERS ================= */
   const acceptOffer = async (offer) => {
-    try {
-      await api.put(`/offers/${offer.id}`, {
-        ...offer,
-        status: "ACCEPTED",
-      });
-      alert("✅ Offer Accepted");
-      fetchOffers(offer.productId);
-    } catch {
-      alert("❌ Failed to accept offer");
-    }
-  };
+  try {
+    await api.put(`/offers/${offer.id}`, {
+      ...offer,
+      status: "ACCEPTED",
+    });
+
+    fetchOffers(offer.productId); // ✅ direct refresh
+  } catch {
+    alert("❌ Failed to accept offer");
+  }
+};
 
   const rejectOffer = async (offer) => {
     try {
@@ -187,6 +190,51 @@ function ESell() {
       alert("❌ Failed to reject offer");
     }
   };
+
+  
+/*============================= ofer message ==================*/
+  useEffect(() => {
+  if (!sellerId || !stompClient?.connected) return;
+
+  const subscription = stompClient.subscribe(
+    `/topic/offer/${sellerId}`,
+    (msg) => {
+      toast.success(msg.body);
+
+      if (editProduct?.id) {
+        fetchOffers(editProduct.id);
+      }
+
+      fetchMyProducts();
+    }
+  );
+
+  return () => subscription.unsubscribe();
+}, [sellerId, editProduct]);
+
+/*===========================offer count ================*/
+const [offerCounts, setOfferCounts] = useState({});
+
+const fetchOfferCount = async (productId) => {
+  try {
+    const res = await api.get(`/offers/product/${productId}`);
+    setOfferCounts(prev => ({
+      ...prev,
+      [productId]: res.data.length
+    }));
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+useEffect(() => {
+  if (products.length > 0) {
+    products.forEach(p => fetchOfferCount(p.id));
+  }
+}, [products]);
+
+/*================== offer list =================*/
+const [viewOffersProduct, setViewOffersProduct] = useState(null);
 
   return (
     <div className="p-4">
@@ -205,41 +253,72 @@ function ESell() {
       {/* PRODUCT LIST */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {products.map((p) => (
-          <div key={p.id} className="bg-white p-3 rounded shadow">
+          <div
+  key={p.id}
+  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-300 overflow-hidden border"
+>
+  {/* IMAGE */}
+  <div className="relative">
+    <img
+      src={
+        p.images?.length > 0
+          ? `${BASE_URL}/image/get/product/${p.id}/${p.images[0]}`
+          : "https://via.placeholder.com/300"
+      }
+      className="h-44 w-full object-cover"
+    />
 
-            {/* IMAGE */}
-            <img
-              src={
-                p.images?.length > 0
-                  ? `${BASE_URL}/image/get/product/${p.id}/${p.images[0]}`
-                  : "https://via.placeholder.com/300"
-              }
-              className="h-40 w-full object-cover rounded mb-2"
-            />
+    {/* OFFER BADGE */}
+    {offerCounts[p.id] > 0 && (
+      <span className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full shadow">
+        🔥 {offerCounts[p.id]} Offers
+      </span>
+    )}
+  </div>
 
-            <h3 className="font-bold">{p.title}</h3>
-            <p>₹{p.price}</p>
-            <p>Stock: {p.stock}</p>
-            <p className="text-sm text-gray-500">{p.category}</p>
-            <p className="text-xs mt-1">
-              {p.codAvailable ? "COD Available" : "Online Only"}
-            </p>
+  {/* CONTENT */}
+  <div className="p-3">
+    <h3 className="font-semibold text-lg truncate">{p.title}</h3>
 
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={() => startEdit(p)}
-                className="flex-1 bg-blue-500 text-white p-1 rounded"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => deleteProduct(p.id)}
-                className="flex-1 bg-red-500 text-white p-1 rounded"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+    <p className="text-green-600 font-bold text-xl">₹{p.price}</p>
+
+    <div className="flex justify-between text-sm text-gray-500 mt-1">
+      <span>Stock: {p.stock}</span>
+      <span>{p.category}</span>
+    </div>
+
+    <p className="text-xs mt-1 text-gray-600">
+      {p.codAvailable ? "🚚 COD Available" : "💳 Online Only"}
+    </p>
+
+    {/* BUTTONS */}
+    <div className="flex gap-2 mt-3">
+      <button
+        onClick={() => startEdit(p)}
+        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-1 rounded-lg text-sm transition"
+      >
+        ✏️ Edit
+      </button>
+
+      <button
+        onClick={() => {
+          setViewOffersProduct(p);
+          fetchOffers(p.id);
+        }}
+        className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-1 rounded-lg text-sm transition"
+      >
+        💰 Offers
+      </button>
+
+      <button
+        onClick={() => deleteProduct(p.id)}
+        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-1 rounded-lg text-sm transition"
+      >
+        🗑️
+      </button>
+    </div>
+  </div>
+</div>
         ))}
       </div>
 
@@ -344,31 +423,10 @@ function ESell() {
             <input id="editMore" type="file" multiple hidden
               onChange={(e)=>setImages([...images,...Array.from(e.target.files)])}/>
 
-            {/* ✅ SHOW OFFERS */}
-<div className="mt-4">
-  <h4 className="font-semibold text-lg">Offers Received 💰</h4>
-  {offers.length === 0 ? (
-    <p className="text-sm text-gray-500">No offers</p>
-  ) : (
-    offers.map((o) => (
-      <div key={o.id} className="border p-2 mt-2 rounded">
-        <p><span className="font-semibold">Buyer:</span> {o.buyerName || o.buyerEmail || "Unknown"}</p>
-        <p><span className="font-semibold">Offer Price:</span> ₹{o.offerPrice}</p>
-        <p className="text-xs"><span className="font-semibold">Status:</span> {o.status}</p>
-        <div className="flex gap-2 mt-1">
-          {o.status === "PENDING" && (
-            <>
-              <button onClick={()=>acceptOffer(o)}
-                className="bg-green-600 text-white px-2 py-1 text-xs rounded">Accept</button>
-              <button onClick={()=>rejectOffer(o)}
-                className="bg-red-500 text-white px-2 py-1 text-xs rounded">Reject</button>
-            </>
-          )}
-        </div>
-      </div>
-    ))
-  )}
-</div>
+           
+  
+
+
 
             <div className="flex gap-2 mt-3">
               <button onClick={()=>setEditProduct(null)} className="flex-1 bg-gray-400 text-white p-2">Cancel</button>
@@ -379,6 +437,60 @@ function ESell() {
           </div>
         </div>
       )}
+
+      {viewOffersProduct && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
+    <div className="bg-white p-4 rounded w-full max-w-md">
+
+      <h3 className="font-bold text-lg mb-2">
+        Offers for {viewOffersProduct.title} 💰
+      </h3>
+
+      {offers.length === 0 ? (
+        <p className="text-sm text-gray-500">No offers</p>
+      ) : (
+        offers.map((o) => (
+          <div key={o.id} className="border p-2 mt-2 rounded">
+            <p>
+              <span className="font-semibold">Buyer:</span>{" "}
+              {o.buyerName || o.buyerEmail || "Unknown"}
+            </p>
+            <p>
+              <span className="font-semibold">Offer:</span> ₹{o.offerPrice}
+            </p>
+            <p className="text-xs">
+              <span className="font-semibold">Status:</span> {o.status}
+            </p>
+
+            {o.status === "PENDING" && (
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={() => acceptOffer(o)}
+                  className="bg-green-600 text-white px-2 py-1 text-xs rounded"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => rejectOffer(o)}
+                  className="bg-red-500 text-white px-2 py-1 text-xs rounded"
+                >
+                  Reject
+                </button>
+              </div>
+            )}
+          </div>
+        ))
+      )}
+
+      <button
+        onClick={() => setViewOffersProduct(null)}
+        className="w-full bg-gray-500 text-white mt-3 p-2 rounded"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
 
     </div>
   );

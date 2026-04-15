@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const USER_ID = localStorage.getItem("userId");
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
 export default function Payments() {
   const [summary, setSummary] = useState({
@@ -37,7 +37,7 @@ export default function Payments() {
   const fetchPayments = async () => {
     try {
       const res = await axios.get(
-        `${BASE_URL}/api/monthly-bills/user/${USER_ID}`
+        `${BASE_URL}/monthly-bills/user/${USER_ID}`
       );
 
       const billsData = res.data || [];
@@ -72,7 +72,7 @@ export default function Payments() {
 
     try {
       const res = await axios.get(
-        `${BASE_URL}/api/companies/type/PAYMENT`
+        `${BASE_URL}/companies/type/PAYMENT`
       );
       setPaymentCompanies(res.data || []);
     } catch (err) {
@@ -91,7 +91,7 @@ export default function Payments() {
 
       try {
         const res = await axios.get(
-          `${BASE_URL}/api/companies/type/SUB_PAYMENT`
+          `${BASE_URL}/companies/type/SUB_PAYMENT`
         );
         setSubPaymentCompanies(res.data || []);
       } catch (err) {
@@ -106,7 +106,7 @@ export default function Payments() {
 
   const createOrder = async (paymentType, upiApp) => {
     const res = await axios.post(
-      `${BASE_URL}/api/payments/create-order`,
+      `${BASE_URL}/payments/create-order`,
       {
         billId: selectedBill.id,
         paymentType,
@@ -131,7 +131,7 @@ export default function Payments() {
         order_id: order.orderId,
 
         handler: async function (response) {
-          await axios.post(`${BASE_URL}/api/payments/verify`, {
+          await axios.post(`${BASE_URL}/payments/verify`, {
             razorpayOrderId: response.razorpay_order_id,
             razorpayPaymentId: response.razorpay_payment_id,
             razorpaySignature: response.razorpay_signature,
@@ -228,7 +228,7 @@ export default function Payments() {
               <OptionCard
                 key={c.id}
                 name={c.name}
-                logo={`${BASE_URL}/api/companies/image/get/company/${c.id}`}
+                logo={`${BASE_URL}/companies/image/get/company/${c.id}`}
                 onClick={() => handlePaymentSelect(c)}
               />
             ))}
@@ -249,7 +249,7 @@ export default function Payments() {
               <OptionCard
                 key={c.id}
                 name={c.name}
-                logo={`${BASE_URL}/api/companies/image/get/company/${c.id}`}
+                logo={`${BASE_URL}/companies/image/get/company/${c.id}`}
                 onClick={() => openRazorpay("UPI", c.name)}
               />
             ))}

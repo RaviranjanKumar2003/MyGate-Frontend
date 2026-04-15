@@ -7,6 +7,7 @@ function UserNotice() {
   const [error, setError] = useState("");
 
   const SOCIETY_ID = localStorage.getItem("societyId");
+  const USER_ID = Number(localStorage.getItem("userId")); // ✅ ADD
 
   /* ================= FETCH NOTICES ================= */
   useEffect(() => {
@@ -44,6 +45,29 @@ function UserNotice() {
 
     fetchNotices();
   }, [SOCIETY_ID]);
+
+  /* ================= MARK AS SEEN ================= */
+  const markAsSeen = async (noticeId) => {
+    try {
+      await api.post(`/notice-seen/${noticeId}/seen`, null, {
+        params: {
+          userId: USER_ID,
+          role: "NORMAL_USER", // ✅ IMPORTANT
+        },
+      });
+    } catch (err) {
+      console.log("Seen error:", err.response?.data || err.message);
+    }
+  };
+
+  /* ================= AUTO MARK AS SEEN ================= */
+  useEffect(() => {
+    if (notices.length > 0 && USER_ID) {
+      notices.forEach((n) => {
+        markAsSeen(n.id);
+      });
+    }
+  }, [notices, USER_ID]);
 
   /* ================= BADGES ================= */
   const priorityBadge = (priority) => {
@@ -143,14 +167,12 @@ function UserNotice() {
             {/* ===== FOOTER ===== */}
             <div className="mt-3 text-xs text-gray-400 flex justify-between flex-wrap gap-2">
               <span>
-                Posted on{" "}
-                {new Date(n.createdAt).toLocaleString()}
+                Posted on {new Date(n.createdAt).toLocaleString()}
               </span>
 
               {n.expiryDate && (
                 <span>
-                  Expires on{" "}
-                  {new Date(n.expiryDate).toLocaleDateString()}
+                  Expires on {new Date(n.expiryDate).toLocaleDateString()}
                 </span>
               )}
             </div>

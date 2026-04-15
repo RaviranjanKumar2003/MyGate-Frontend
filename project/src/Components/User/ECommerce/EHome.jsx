@@ -4,6 +4,7 @@ import BuyModal from "./BuyModal";
 
 /* ================= IMAGE SLIDER ================= */
 function ProductImageSlider({ images, productId, baseUrl }) {
+  
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -38,6 +39,8 @@ function ProductImageSlider({ images, productId, baseUrl }) {
       prev === 0 ? images.length - 1 : prev - 1
     );
   };
+
+  
 
   return (
     <div className="relative w-full">
@@ -108,6 +111,35 @@ function EHome() {
     }
   };
 
+  const [offers, setOffers] = useState([]);
+const [showOffersModal, setShowOffersModal] = useState(false);
+
+const [seller, setSeller] = useState(null);
+const [showSellerModal, setShowSellerModal] = useState(false);
+
+const fetchOffers = async (productId) => {
+  try {
+    const res = await api.get(`/offers/product/${productId}`);
+    setOffers(res.data || []);
+    setShowOffersModal(true);
+  } catch (err) {
+    console.error("Offer fetch error:", err);
+    alert("❌ Failed to fetch offers");
+  }
+};
+
+
+
+const [showOfferBtn, setShowOfferBtn] = useState(true);
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setShowOfferBtn((prev) => !prev);
+  }, 10000);
+
+  return () => clearInterval(interval);
+}, []);
+
 //============= OFFER
 const sendOffer = async (product) => {
   const price = prompt("Enter your offer price");
@@ -118,18 +150,38 @@ const sendOffer = async (product) => {
   }
 
   try {
-    await api.post("/offers", {
-      productId: Number(product.id),
-      buyerId: Number(buyerId),
-      offerPrice: Number(price), // ✅ FIXED (price → offerPrice)
-    });
+    const existingOffer = offers.find(
+      (o) => Number(o.buyerId) === Number(buyerId)
+    );
 
-    alert("✅ Offer Sent");
+    if (existingOffer) {
+      // 🔥 UPDATE OFFER
+      await api.put(`/offers/${existingOffer.id}`, {
+        offerPrice: Number(price),
+      });
+
+      alert("✏️ Offer Updated");
+    } else {
+      // ✅ CREATE OFFER
+      await api.post("/offers", {
+        productId: Number(product.id),
+        buyerId: Number(buyerId),
+        offerPrice: Number(price),
+      });
+
+      alert("✅ Offer Sent");
+    }
+
+    // 🔥 refresh offers
+    fetchOffers(product.id);
+
   } catch (err) {
     console.error("Offer Error:", err.response?.data || err);
     alert("❌ Failed");
   }
 };
+
+
 
 
   /* ================= FETCH CATEGORIES ================= */
@@ -212,6 +264,13 @@ const sendOffer = async (product) => {
       );
     });
 
+    // ✅ ADD THIS HERE (IMPORTANT)
+const sortedOffers = [...offers].sort((a, b) => {
+  if (a.buyerId === buyerId) return -1;
+  if (b.buyerId === buyerId) return 1;
+  return 0;
+});
+
   return (
     <div className="w-screen sm:w-auto p-2 sm:p-4">
 
@@ -219,7 +278,7 @@ const sendOffer = async (product) => {
       <div className="flex gap-2 sm:gap-3 overflow-x-auto mb-4 py-1 px-1">
         <button
           onClick={() => setSelectedCategory("")}
-          className={`flex-shrink-0 px-4 py-2 rounded-full border ${
+          className={`shrink-0 px-4 py-2 rounded-full border ${
             selectedCategory === "" ? "bg-orange-500 text-white" : "bg-white"
           }`}
         >
@@ -285,7 +344,7 @@ const sendOffer = async (product) => {
                     ₹{product.price}
                   </p>
 
-                  <p className="text-xs mt-1">
+                  <div className="flex justify-between items-center text-xs mt-1">
                     {product.codAvailable ? (
                       <span className="text-green-600 font-semibold">
                         🚚 COD Available
@@ -295,7 +354,30 @@ const sendOffer = async (product) => {
                         🚚 COD Not Available
                       </span>
                     )}
-                  </p>
+
+                    {showOfferBtn ? (
+  <button
+    onClick={() => fetchOffers(product.id)}
+    className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+  >
+    View Offers
+  </button>
+) : (
+  <button
+  onClick={() => {
+  setSeller({
+    name: product.sellerName || "N/A",
+    email: product.sellerEmail || "N/A",
+    mobileNumber: product.sellerMobile || "N/A",
+  });
+  setShowSellerModal(true);
+}}
+  className="bg-gray-700 text-white px-2 py-1 rounded text-xs"
+>
+  View Seller
+</button>
+)}
+                  </div>
 
                   {product.stock === 0 && (
                     <p className="text-red-500 text-sm font-semibold">
@@ -349,6 +431,58 @@ const sendOffer = async (product) => {
           onClose={() => setSelectedProduct(null)}
         />
       )}
+
+      {showOffersModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+    <div className="bg-white p-4 rounded w-80 max-h-100 overflow-y-auto">
+      <h2 className="text-lg font-bold mb-2">All Offers</h2>
+
+      {offers.length > 0 ? (
+       sortedOffers.map((o, i) => (
+          <div key={i} className="border-b py-2 text-sm">
+            <p>
+  👤 Buyer Name:{" "}
+  {o.buyerId === buyerId ? (
+    <span className="text-green-600 font-bold">Me</span>
+  ) : (
+    o.buyerName
+  )}
+</p>
+            <p>💰 Offer Price: ₹{o.offerPrice}</p>
+          </div>
+        ))
+      ) : (
+        <p>No offers yet</p>
+      )}
+
+      <button
+        onClick={() => setShowOffersModal(false)}
+        className="mt-3 bg-red-500 text-white px-3 py-1 rounded w-full"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
+{showSellerModal && seller && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+    <div className="bg-white p-4 rounded w-80">
+      <h2 className="text-lg font-bold mb-2">Seller Details</h2>
+
+      <p>👤 Name: {seller.name}</p>
+      <p>📧 Email: {seller.email}</p>
+      <p>📞 Phone: {seller.mobileNumber}</p>
+
+      <button
+        onClick={() => setShowSellerModal(false)}
+        className="mt-3 bg-red-500 text-white px-3 py-1 rounded w-full"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
 
     </div>
   );

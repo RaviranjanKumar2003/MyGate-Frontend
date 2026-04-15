@@ -29,13 +29,11 @@ function CreateSociety({ onSuccess }) {
     try {
       setLoading(true);
 
-      // ✅ JSON payload as per backend DTO
       const payload = {
         name: formData.name,
         city: formData.city,
         address: formData.address,
         isActive: "ACTIVE",
-
         societyAdmin: {
           adminName: formData.adminName,
           adminEmail: formData.adminEmail,
@@ -46,7 +44,7 @@ function CreateSociety({ onSuccess }) {
 
       await api.post("/societies", payload);
 
-      setMessage("✅ Society & Society Admin created successfully");
+      setMessage("✅ Society created successfully");
 
       setFormData({
         name: "",
@@ -58,9 +56,8 @@ function CreateSociety({ onSuccess }) {
         adminPassword: ""
       });
 
-      if (onSuccess) {
-        setTimeout(() => onSuccess(), 800);
-      }
+      if (onSuccess) setTimeout(() => onSuccess(), 800);
+
     } catch (err) {
       console.error(err);
       setError(err?.response?.data?.message || "❌ Failed to create society");
@@ -70,114 +67,145 @@ function CreateSociety({ onSuccess }) {
   };
 
   return (
-    <div className="p-6 max-w-xl">
-      <h1
-        className="mb-6 text-3xl font-extrabold
-        bg-linear-to-r from-indigo-400 to-pink-400
-        bg-clip-text text-transparent"
-      >
-        Create Society
-      </h1>
+    <div className="flex sm:mt-15">
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-lg p-6 space-y-4"
-      >
-        {/* ===== Society Details ===== */}
-        <h2 className="text-lg font-bold text-gray-700">Society Details</h2>
+      {/* RIGHT CONTENT */}
+      <div className="flex-1 p-6 overflow-y-auto">
 
-        <input
-          type="text"
-          name="name"
-          placeholder="Society Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
-        />
+        <div className="max-w-3xl mx-auto">
 
-        <input
-          type="text"
-          name="city"
-          placeholder="City"
-          value={formData.city}
-          onChange={handleChange}
-          required
-          className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
-        />
+          <div className="bg-white mt-5 rounded-2xl shadow-md hover:shadow-lg transition p-6 border">
 
-        <textarea
-          name="address"
-          placeholder="Address"
-          value={formData.address}
-          onChange={handleChange}
-          rows={3}
-          className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
-        />
+            {/* HEADER */}
+            <div className="mb-6">
+              <h1 className="text-2xl font-semibold text-gray-800">
+                🏢 Create Society
+              </h1>
+              <p className="text-sm text-gray-500">
+                Add a new society with admin details
+              </p>
+            </div>
 
-        {/* ===== Society Admin Details ===== */}
-        <h2 className="text-lg font-bold text-gray-700 pt-4">
-          Society Admin Details
-        </h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
 
-        <input
-          type="text"
-          name="adminName"
-          placeholder="Admin Name"
-          value={formData.adminName}
-          onChange={handleChange}
-          required
-          className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
-        />
+              {/* ===== Society Details ===== */}
+              <div>
+                <h2 className="text-sm font-semibold text-gray-600 mb-2">
+                  Society Details
+                </h2>
 
-        <input
-          type="email"
-          name="adminEmail"
-          placeholder="Admin Email"
-          value={formData.adminEmail}
-          onChange={handleChange}
-          required
-          className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
-        />
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Society Name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
 
-        <input
-          type="text"
-          name="adminMobileNumber"
-          placeholder="Admin Mobile Number"
-          value={formData.adminMobileNumber}
-          onChange={handleChange}
-          required
-          className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
-        />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <input
+                    type="text"
+                    name="city"
+                    placeholder="City"
+                    value={formData.city}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
 
-        <input
-          type="password"
-          name="adminPassword"
-          placeholder="Admin Password"
-          value={formData.adminPassword}
-          onChange={handleChange}
-          required
-          className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
-        />
+                  <input
+                    type="text"
+                    name="address"
+                    placeholder="Address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+              </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-2 rounded-xl font-semibold text-white
-            bg-linear-to-r from-indigo-500 to-pink-500
-            ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
-        >
-          {loading ? "Creating..." : "Create Society"}
-        </button>
+              {/* ===== Divider ===== */}
+              <div className="border-t pt-4"></div>
 
-        {message && (
-          <p className="text-center text-sm text-green-600">{message}</p>
-        )}
+              {/* ===== Admin Details ===== */}
+              <div>
+                <h2 className="text-sm font-semibold text-gray-600 mb-2">
+                  Admin Details
+                </h2>
 
-        {error && (
-          <p className="text-center text-sm text-red-600">{error}</p>
-        )}
-      </form>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                  <input
+                    type="text"
+                    name="adminName"
+                    placeholder="Admin Name"
+                    value={formData.adminName}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+
+                  <input
+                    type="email"
+                    name="adminEmail"
+                    placeholder="Admin Email"
+                    value={formData.adminEmail}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+
+                  <input
+                    type="text"
+                    name="adminMobileNumber"
+                    placeholder="Mobile Number"
+                    value={formData.adminMobileNumber}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+
+                  <input
+                    type="password"
+                    name="adminPassword"
+                    placeholder="Password"
+                    value={formData.adminPassword}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+
+                </div>
+              </div>
+
+              {/* ===== BUTTON ===== */}
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg font-medium transition shadow ${
+                  loading ? "opacity-60 cursor-not-allowed" : ""
+                }`}
+              >
+                {loading ? "Creating..." : "Create Society"}
+              </button>
+
+              {/* ===== MESSAGE ===== */}
+              {message && (
+                <p className="text-center text-green-600 text-sm">{message}</p>
+              )}
+
+              {error && (
+                <p className="text-center text-red-600 text-sm">{error}</p>
+              )}
+
+            </form>
+
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }

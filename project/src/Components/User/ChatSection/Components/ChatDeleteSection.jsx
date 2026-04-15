@@ -23,7 +23,11 @@ function ChatDeleteSection({
   refresh,
   startEdit,
   me,
-  position
+  position,
+  openSeenUsers,
+  onReply,
+  onCopy,
+  onForward
 }) {
 
   const isMobile = window.innerWidth < 768;
@@ -36,6 +40,7 @@ function ChatDeleteSection({
 
   const reactions = ["👍","❤️","😂","😮","😢","🙏"];
 
+  
   /* ================= TIME CHECK ================= */
 
   const getDiffSeconds = () => {
@@ -113,6 +118,12 @@ function ChatDeleteSection({
     setShowReactionPicker(false);
   };
 
+  /*===== COPY SMS ======*/
+    const handleCopy = () => {
+      navigator.clipboard.writeText(messageText);
+      alert("Copied!");
+    };
+
   return (
     <>
       {/* ================= MENU ================= */}
@@ -159,10 +170,47 @@ function ChatDeleteSection({
 
           <div className="text-sm">
 
-            <MenuItem icon={<Info size={18}/>} text="Message info" />
-            <MenuItem icon={<Reply size={18}/>} text="Reply" />
-            <MenuItem icon={<Copy size={18}/>} text="Copy" />
-            <MenuItem icon={<Forward size={18}/>} text="Forward" />
+            <MenuItem
+              icon={<Info size={18}/>}
+              text="Message info"
+              onClick={() => {
+                openSeenUsers();
+                close();
+              }}
+            />
+
+            <MenuItem 
+  icon={<Reply size={18}/>} 
+  text="Reply"
+  onClick={() => {
+    onReply({
+      id: messageId,
+      text: messageText
+    });
+    close();
+  }}
+/>
+
+<MenuItem 
+  icon={<Copy size={18}/>} 
+  text="Copy" 
+  onClick={() => {
+    onCopy(messageText);
+    close();
+  }}
+/>
+
+<MenuItem 
+  icon={<Forward size={18}/>} 
+  text="Forward"
+  onClick={() => {
+    onForward({
+      id: messageId,
+      text: messageText
+    });
+    close();
+  }}
+/>
             <MenuItem icon={<Pin size={18}/>} text="Pin" />
             <MenuItem icon={<Star size={18}/>} text="Star" />
             <MenuItem icon={<Plus size={18}/>} text="Add text to note" />

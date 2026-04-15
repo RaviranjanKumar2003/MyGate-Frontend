@@ -1,137 +1,64 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Bell, Menu, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-
-const CLICKED_KEY = "clickedNotificationIds";
+import React, { useState, useEffect } from "react";
+import { Menu, X } from "lucide-react";
+import NotificationBell from "../NotificationBell";
 
 export default function Topbar({ isSidebarOpen, toggleSidebar }) {
-  const navigate = useNavigate();
-  const notifRef = useRef(null);
-
-  const [openNotifications, setOpenNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const [societyName, setSocietyName] = useState(
     localStorage.getItem("societyName") || "Society Admin"
   );
 
   const token = localStorage.getItem("jwtToken");
 
-  const clickedIds =
-    JSON.parse(localStorage.getItem(CLICKED_KEY)) || [];
+  const BASE_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-  const unreadCount = notifications.length;
-
-  // ================= FETCH SOCIETY NAME =================
+  /* ================= SOCIETY NAME ================= */
   useEffect(() => {
     const fetchSocietyName = async () => {
       try {
         if (!token) return;
 
-        const baseURL =
-        import.meta.env.VITE_API_URL || "http://localhost:8080/api";
-
-        const res = await fetch(
-        `${baseURL}/society-admins/me`,
-      {
-        headers: {
-         Authorization: `Bearer ${token}`,
-       },
-      }
-    );
+        const res = await fetch(`${BASE_URL}/society-admins/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const data = await res.json();
-        const name = data?.society?.name;
 
-        if (name) {
-          setSocietyName(name);
-          localStorage.setItem("societyName", name);
+        if (data?.society?.name) {
+          setSocietyName(data.society.name);
+          localStorage.setItem("societyName", data.society.name);
         }
       } catch (err) {
-        console.error("Failed to fetch society name", err);
+        console.error("Society fetch error", err);
       }
     };
 
     fetchSocietyName();
   }, [token]);
 
-  // ================= FETCH NOTIFICATIONS (🔔 FIXED) =================
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        if (!token) return;
+  /* ================= NAVIGATION LOGIC ================= */
+  const handleNotificationNavigate = (n) => {
+    // 🔥 smart routing based on type
+    switch (n.type) {
+      case "COMPLAINT":
+        return `/society-admin/complaints/${n.referenceId}`;
 
-        const baseURL =
-  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+      case "NOTICE":
+        return `/society-admin/notices/${n.referenceId}`;
 
-const res = await axios.get(
-  `${baseURL}/notifications/user`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
-
-        // 🔔 sirf unread / unclicked notifications
-        const filtered = res.data.filter(
-          (n) => !clickedIds.includes(n.id)
-        );
-
-        setNotifications(filtered);
-      } catch (err) {
-        console.error("Notification fetch failed", err);
-      }
-    };
-
-    fetchNotifications();
-  }, [token]);
-
-  // ================= CLICK NOTIFICATION =================
-  const handleNotificationClick = (notification) => {
-    const updatedClicked = [...clickedIds, notification.id];
-    localStorage.setItem(
-      CLICKED_KEY,
-      JSON.stringify(updatedClicked)
-    );
-
-    // bell se remove
-    setNotifications((prev) =>
-      prev.filter((n) => n.id !== notification.id)
-    );
-
-    setOpenNotifications(false);
-
-    // Notices page pe redirect
-    navigate("/society-admin/notices", {
-      state: { noticeId: notification.referenceId },
-    });
+      default:
+        return "/society-admin/notices";
+    }
   };
-
-  // ================= LOGOUT =================
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/login";
-  };
-
-  // ================= CLOSE ON OUTSIDE CLICK =================
-  useEffect(() => {
-    const close = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setOpenNotifications(false);
-      }
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
 
   return (
     <div className="flex justify-between items-center bg-white shadow p-4 lg:m-3">
+
       {/* LEFT */}
       <div className="flex items-center gap-4">
         <button
           onClick={toggleSidebar}
-          className="md:hidden text-gray-700 cursor-pointer"
+          className="md:hidden text-gray-700"
         >
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -143,54 +70,19 @@ const res = await axios.get(
 
       {/* RIGHT */}
       <div className="flex items-center gap-6">
-        {/* 🔔 NOTIFICATIONS */}
-        <div className="relative" ref={notifRef}>
-          <button
-            onClick={() => setOpenNotifications(!openNotifications)}
-            className="relative p-2 rounded-full hover:bg-gray-100 cursor-pointer"
-          >
-            <Bell size={20} className="text-gray-700" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </button>
 
-          {openNotifications && (
-            <div className="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-xl z-50">
-              <div className="px-4 py-2 border-b font-semibold text-gray-700">
-                Notifications
-              </div>
-
-              {notifications.length > 0 ? (
-                notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => handleNotificationClick(n)}
-                    className="px-4 py-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-100"
-                  >
-                    <p className="text-sm font-medium text-gray-800">
-                      {n.title}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(n.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="p-4 text-center text-gray-500">
-                  No new notifications
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+        {/* 🔔 NOTIFICATION */}
+        <NotificationBell
+          onNavigate={handleNotificationNavigate}
+        />
 
         {/* LOGOUT */}
         <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded cursor-pointer"
+          onClick={() => {
+            localStorage.clear();
+            window.location.href = "/login";
+          }}
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
         >
           Logout
         </button>

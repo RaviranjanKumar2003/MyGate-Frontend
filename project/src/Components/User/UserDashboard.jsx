@@ -14,16 +14,12 @@ import UserNotice from "./UserNotice";
 import MyQR from "./MyQR";
 import CommunityChat from "./ChatSection/CommunityChat";
 import SocietyBazaar from "./ECommerce/SocietyBazaar";
+import NotificationBell from "../NotificationBell";
 
 function UserDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [activeScreen, setActiveScreen] = useState("DASHBOARD");
-
-  /* 🔔 NOTIFICATIONS */
-  const [notifications, setNotifications] = useState([]);
-  const [openNotif, setOpenNotif] = useState(false);
-  const notifRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -62,64 +58,9 @@ function UserDashboard() {
       });
   }, [USER_ID, SOCIETY_ID]);
 
-  /* ================= FETCH NOTIFICATIONS ================= */
-  useEffect(() => {
-    if (!USER_ID) return;
 
-    const fetchNotifications = async () => {
-      try {
-        const res = await api.get("/notifications/user");
-        setNotifications(res.data || []);
-      } catch (err) {
-        console.error("Notification fetch failed", err);
-      }
-    };
 
-    fetchNotifications();
-  }, [USER_ID]);
-
-  /* ================= CLOSE DROPDOWN ON OUTSIDE CLICK ================= */
-  useEffect(() => {
-    const close = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setOpenNotif(false);
-      }
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
-
-  /* ================= MARK AS READ ================= */
-  const handleNotificationClick = async (n) => {
-    try {
-      if (!n.read) {
-        await api.put(`/notifications/${n.id}/read`);
-      }
-
-      setNotifications((prev) =>
-        prev.map((item) =>
-          item.id === n.id ? { ...item, read: true } : item
-        )
-      );
-
-      setOpenNotif(false);
-
-      // optional navigation
-      if (n.type === "COMPLAINT") {
-        setActiveScreen("COMPLAINTS");
-      }
-      if (n.type === "NOTICE") {
-        setActiveScreen("NOTICE");
-      }
-      if (n.type === "PAYMENT" || n.type === "PAYMENT_REMINDER") {
-        setActiveScreen("PAYMENTS");
-      }
-    } catch (err) {
-      console.error("Mark read failed", err);
-    }
-  };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  
 
   /* ================= SCREEN RENDER ================= */
   const renderScreen = () => {
@@ -175,76 +116,43 @@ function UserDashboard() {
       <div className="flex-1 flex flex-col">
         {/* ================= TOPBAR ================= */}
         <div className="flex items-center justify-between bg-[#0b2a35] text-white p-4 shadow">
-          <div className="flex items-center gap-3">
-            <Menu
-              className="md:hidden cursor-pointer"
-              onClick={() => setSidebarOpen(true)}
-            />
-            <div>
-              <h3 className="font-semibold">
-                {userProfile?.societyName || SOCIETY_NAME}
-              </h3>
-              <p className="text-xs opacity-80">
-                Flat {userProfile?.flatNumber} • {userProfile?.normalUserType}
-              </p>
-            </div>
-          </div>
+  
+  <div className="flex items-center gap-3">
+    <Menu
+      className="md:hidden cursor-pointer"
+      onClick={() => setSidebarOpen(true)}
+    />
 
-          {/* 🔔 NOTIFICATIONS */}
-          <div className="flex items-center gap-4">
-            <div className="relative" ref={notifRef}>
-              <Bell
-                size={22}
-                className="cursor-pointer"
-                onClick={() => setOpenNotif(!openNotif)}
-              />
+    <div>
+      <h3 className="font-semibold">
+        {userProfile?.societyName || SOCIETY_NAME}
+      </h3>
+      <p className="text-xs opacity-80">
+        Flat {userProfile?.flatNumber} • {userProfile?.normalUserType}
+      </p>
+    </div>
+  </div>
 
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
+  {/* RIGHT SIDE */}
+  <div className="flex items-center gap-4">
 
-              {openNotif && (
-                <div className="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-xl z-50">
-                  <div className="px-4 py-2 border-b font-semibold text-gray-700">
-                    Notifications
-                  </div>
+    {/* 🔔 NOTIFICATION BELL */}
+    <NotificationBell
+      bg="dark"
+      societyId={SOCIETY_ID}
+      role="NORMAL_USER"
+    />
 
-                  {notifications.length > 0 ? (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        onClick={() => handleNotificationClick(n)}
-                        className={`px-4 py-3 border-b cursor-pointer
-                          ${!n.read ? "bg-blue-50" : ""}
-                          hover:bg-gray-100`}
-                      >
-                        <p className="text-sm font-medium">{n.title}</p>
-                        <p className="text-xs text-gray-600">{n.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {new Date(n.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="p-4 text-center text-gray-500">
-                      No notifications
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm"
-            >
-              <LogOut size={16} />
-              Logout
-            </button>
-          </div>
-        </div>
+    {/* LOGOUT */}
+    <button
+      onClick={handleLogout}
+      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm"
+    >
+      <LogOut size={16} />
+      Logout
+    </button>
+  </div>
+</div>
 
         {/* ================= CONTENT ================= */}
         <div className="flex-1 overflow-auto sm:p-4">{renderScreen()}</div>

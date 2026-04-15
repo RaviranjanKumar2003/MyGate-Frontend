@@ -26,10 +26,18 @@ import ChatDocument from "./Components/ChatDocument";
 import ChatThreeDot from "./Components/ChatThreeDot";
 import ChatVideoCall from "./Components/ChatVideoCall";
 import ChatAudioCall from "./Components/ChatAudioCall";
+import ChatSeenUsers from "./Components/ChatSeenUsers";
 
 
 
 function CommunityChat({ userProfile }) {
+
+  const API_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:8080"
+    : "https://your-backend.onrender.com";
+
+const CHAT_API = `${API_URL}/api`;
 
   const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
@@ -75,6 +83,9 @@ function CommunityChat({ userProfile }) {
 
   const [isConnected, setIsConnected] = useState(false);  // startsWith
 
+  /*===== SMS REPLY ======*/
+    const [replyMsg, setReplyMsg] = useState(null);
+
   const [isMicHover, setIsMicHover] = useState(false);
 
   const [incomingCallData, setIncomingCallData] = useState(null);
@@ -96,6 +107,8 @@ function CommunityChat({ userProfile }) {
 
   const spaceBelow = window.innerHeight - rect.bottom;
   const spaceRight = window.innerWidth - rect.right;
+
+  
 
   let top, left;
 
@@ -133,6 +146,23 @@ const endCall = () => {
   setCallType(null);
 };
 
+
+/* ================= SEEN INFO ================= */
+const [showSeenUsers, setShowSeenUsers] = useState(false);
+const [selectedSeenUsers, setSelectedSeenUsers] = useState([]);
+
+
+  const openSeenUsers = async (msg) => {
+  try {
+    const res = await api.get(`${CHAT_API}/society-chat/seen-users/${msg.id}`);
+
+    setSelectedSeenUsers(res.data);  // ✅ full user data
+    setShowSeenUsers(true);
+
+  } catch (err) {
+    console.error(err);
+  }
+};
   
 
 /* RINGTONE */
@@ -187,7 +217,7 @@ const removeReaction = async (messageId) => {
 
   try {
 
-    await api.delete(`/reactions/remove/${messageId}/${USER_ID}`);
+    await api.delete(`${CHAT_API}/reactions/remove/${messageId}/${USER_ID}`);
 
     setShowReactionUsers(false);
     fetchMessages();  // ⭐ refresh chat
@@ -204,7 +234,7 @@ const updateReaction = async (emoji) => {
 
   try {
 
-    await api.post("/reactions/toggle", {
+    await api.post(`${CHAT_API}/reactions/toggle`, {
       messageId: reactionMessageId,
       userId: USER_ID,
       emoji: emoji
@@ -223,7 +253,7 @@ const openReactionUsers = async (messageId) => {
 
   try {
 
-    const res = await api.get(`/reactions/users/${messageId}`);
+    const res = await api.get(`${CHAT_API}/reactions/users/${messageId}`);
 
     setReactionUsers(res.data);
     setReactionMessageId(messageId);
@@ -254,7 +284,7 @@ const handleFileSelect = (file, type) => {
   setFileType(type);   // ✅ IMPORTANT
 };
 
-  /* WEBSOCKET */
+  /* WEBSOCKET  onReply */
 
  useEffect(() => {
 
@@ -282,7 +312,13 @@ const handleFileSelect = (file, type) => {
   role: data.role,
   userType: data.userType || "Member",
   text: data.message,
-  fileType: data.fileType,   // ⭐⭐⭐ MUST
+
+  // ⭐⭐⭐ ADD THIS
+  replyToMessageId: data.replyToMessageId,
+  replyToMessageText: data.replyToMessageText,
+  replyToSenderName: data.replyToSenderName,
+
+  fileType: data.fileType,
   date: new Date(data.createdAt),
   time: new Date(data.createdAt).toLocaleTimeString("en-IN", {
     hour: "2-digit",
@@ -290,6 +326,7 @@ const handleFileSelect = (file, type) => {
     hour12: true
   }),
   seen: data.seen || false,
+  seenByUsers: data.seenByUsers || [],
   me: data.senderId == USER_ID,
   reactions: data.reactions || {}
 }];
@@ -389,7 +426,7 @@ const handleFileSelect = (file, type) => {
 
     try {
 
-      const res = await api.get(`/society-chat/society/${SOCIETY_ID}/${USER_ID}`);
+      const res = await api.get(`${CHAT_API}/society-chat/society/${SOCIETY_ID}/${USER_ID}`);
 
     const formatted = res.data.map((msg) => {
 
@@ -403,12 +440,18 @@ const handleFileSelect = (file, type) => {
   userType: msg.userType || "Member",
   text: msg.message,
   fileType: msg.fileType,   // ⭐⭐⭐ MUST
+
+  replyToMessageId: msg.replyToMessageId,
+  replyToMessageText: msg.replyToMessageText,
+  replyToSenderName: msg.replyToSenderName,
+
   date: dateObj,
   time: dateObj.toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit"
   }),
   seen: msg.seen || false,
+  seenByUsers: msg.seenByUsers || [],
   me: msg.senderId == USER_ID,
   reactions: msg.reactions || {}
 };
@@ -429,7 +472,7 @@ const handleFileSelect = (file, type) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* OUTSIDE CLICK CLOSE */
+  /* OUTSIDE CLICK CLOSE setReplyMsg */
 
   useEffect(() => {
 
@@ -502,6 +545,7 @@ const handleFileSelect = (file, type) => {
   /*======================== SEND MESSAGE ========================*/
 
   const sendMessage = () => {
+    console.log("Reply Data:", replyMsg);
 
   if (!message.trim()) return;
 
@@ -520,6 +564,12 @@ const handleFileSelect = (file, type) => {
     role: USER_ROLE,
     userType: USER_TYPE,
     text: message,
+
+    replyToMessageId: replyMsg?.id || null,
+    replyToMessageText: replyMsg?.text || null,
+    replyToSenderName: replyMsg?.sender || null,
+    replyToFileType: replyMsg?.fileType || null,
+
     date: new Date(),
     time: new Date().toLocaleTimeString("en-IN"),
     seen: false,
@@ -539,11 +589,16 @@ const handleFileSelect = (file, type) => {
       senderName: USER_NAME,
       role: USER_ROLE,
       userType: USER_TYPE,
-      message: message
+      message: message,
+      replyToMessageId: replyMsg?.id || null,
+  replyToMessageText: replyMsg?.text || null,
+  replyToSenderName: replyMsg?.sender || null
+
     })
   });
 
   setMessage("");
+  setReplyMsg(null);
 };
   /* FILE UPLOAD */
 
@@ -554,7 +609,7 @@ const uploadFile = async (file, type) => {
 
   try {
 
-    const res = await api.post("/files/upload", formData, {
+    const res = await api.post(`${CHAT_API}/files/upload`, formData, {
       headers: { "Content-Type": "multipart/form-data" }
     });
 
@@ -588,7 +643,10 @@ const uploadFile = async (file, type) => {
         role: USER_ROLE,
         userType: USER_TYPE,
         message: fileUrl,
-        fileType: type   // ✅ VERY IMPORTANT
+        fileType: type,   // ✅ VERY IMPORTANT
+        replyToMessageId: replyMsg?.id || null,
+  replyToMessageText: replyMsg?.text || null,
+  replyToSenderName: replyMsg?.sender || null
       })
     });
 
@@ -604,7 +662,7 @@ const uploadFile = async (file, type) => {
   try {
 
     await api.put(
-      `/society-chat/society/${SOCIETY_ID}/update/${editingMessageId}`,
+      `${CHAT_API}/society-chat/society/${SOCIETY_ID}/update/${editingMessageId}`,
       {
         senderId: USER_ID,
         message: editingText
@@ -901,7 +959,43 @@ const uploadFile = async (file, type) => {
 
 ) : (
 
-  <p>{msg.text}</p>
+  <>
+    {/* ⭐ REPLY PREVIEW */}
+   {msg.replyToMessageId && msg.replyToMessageText && (
+  <div
+    className={`mb-1 px-2 py-1 rounded border-l-4 ${
+      msg.me
+        ? "bg-green-400 border-white"
+        : "bg-gray-200 border-green-500"
+    }`}
+  >
+    <p className="text-xs font-semibold">
+      {msg.replyToSenderName}
+    </p>
+
+    {/* 🔥 SMART REPLY PREVIEW */}
+    {msg.replyToFileType === "image" ? (
+      <img
+        src={`${BASE_URL}/files/download/${msg.replyToMessageText.split("/").pop()}`}
+        className="w-12 h-12 rounded object-cover mt-1"
+      />
+    ) : msg.replyToFileType === "video" ? (
+      <div className="flex items-center gap-1 text-xs mt-1">
+        🎥 Video
+      </div>
+    ) : msg.replyToFileType === "audio" ? (
+      <div className="text-xs mt-1">🎵 Audio</div>
+    ) : (
+      <p className="text-xs truncate mt-1">
+        {msg.replyToMessageText}
+      </p>
+    )}
+  </div>
+)}
+
+    {/* ACTUAL MESSAGE */}
+    <p>{msg.text}</p>
+  </>
 
 )}
 
@@ -1109,108 +1203,150 @@ const uploadFile = async (file, type) => {
 
       {/*========================== INPUT ======================================*/}
       
+      <div className="fixed bottom-2 w-full sm:w-[80%] px-2 z-10">
 
-      <div className="bg-[#a5a2a2] flex items-center gap-2 px-3 py-2  rounded-full shadow-2xs text-white fixed z-10 bottom-2 w-full sm:w-[80%]">
+  <div className="bg-[#a5a2a2] rounded-xl shadow flex flex-col">
 
-        <Plus className="cursor-pointer" onClick={() => setOpenDocs(true)}/>
+    {/* ✅ REPLY BOX */}
+    {replyMsg && (
+      <div className="flex justify-between items-center px-3 py-2 bg-gray-200 border-l-4 border-green-500 rounded-t-xl">
 
-        <Smile className="cursor-pointer" onClick={() => setShowEmoji(!showEmoji)}/>
+        <div className="overflow-hidden">
+          <p className="text-xs text-gray-500">Replying to</p>
+          <p className="text-sm truncate max-w-62.5 text-black">
+            {replyMsg.text}
+          </p>
+        </div>
 
-        <textarea
-  placeholder="Type a message"
-  rows={1}
-  className="flex-1 px-4 py-2 text-sm focus:outline-none resize-none"
-  value={
-    selectedFile
-      ? `📎 ${selectedFile.name}`
-      : editingMessageId
-      ? editingText
-      : message
-  }
-  onChange={(e) => {
-    if (editingMessageId) {
-      setEditingText(e.target.value);
-    } else {
-      setMessage(e.target.value);
-    }
-  }}
-  onKeyDown={(e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-
-      if (selectedFile) {
-        uploadFile(selectedFile, fileType);
-        setSelectedFile(null);
-        setFileType(null);
-      } else if (editingMessageId) {
-        updateMessage();
-      } else {
-        sendMessage();
-      }
-    }
-  }}
-/>
-
-        {message.trim() || selectedFile ? (
-          <button
-            onClick={() => {
-              if (selectedFile) {
-  uploadFile(selectedFile, fileType);  // ✅ type pass karo
-  setSelectedFile(null);
-  setFileType(null);
-}
-              else if (editingMessageId) {
-                updateMessage();
-              }
-              else {
-                sendMessage();
-              }
-            }}
-            className="bg-green-500 text-white p-2 rounded-full">
-            <Send size={18}/>
-          </button>
-          ) : (
-           <button
-  onMouseEnter={() => setIsMicHover(true)}
-  onMouseLeave={() => setIsMicHover(false)}
-  className="rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 hover:bg-green-500"
-  style={{
-    width: "40px",   // 🔥 fixed container
-    height: "40px"
-  }}
->
-  <div
-    className={`transition-all duration-200 ${
-      isMicHover ? "scale-125" : "scale-100"
-    }`}
-  >
-    <Mic
-      size={isMicHover ? 24 : 20}   // ✅ size change allowed now
-      className={isMicHover ? "text-white" : "text-black"}
-    />
-  </div>
-</button>
-        )}
+        <button
+          onClick={() => setReplyMsg(null)}
+          className="text-gray-600 text-lg ml-2"
+        >
+          ✕
+        </button>
 
       </div>
+    )}
+
+    {/* ✅ INPUT ROW */}
+    <div className="flex items-center gap-2 px-3 py-2">
+
+      <Plus
+        className="cursor-pointer text-black"
+        onClick={() => setOpenDocs(true)}
+      />
+
+      <Smile
+        className="cursor-pointer text-black"
+        onClick={() => setShowEmoji(!showEmoji)}
+      />
+
+      <textarea
+        placeholder="Type a message"
+        rows={1}
+        className="flex-1 px-3 py-2 text-sm bg-transparent focus:outline-none resize-none text-black"
+        value={
+          selectedFile
+            ? `📎 ${selectedFile.name}`
+            : editingMessageId
+            ? editingText
+            : message
+        }
+        onChange={(e) => {
+          if (editingMessageId) {
+            setEditingText(e.target.value);
+          } else {
+            setMessage(e.target.value);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+
+            if (selectedFile) {
+              uploadFile(selectedFile, fileType);
+              setSelectedFile(null);
+              setFileType(null);
+            } else if (editingMessageId) {
+              updateMessage();
+            } else {
+              sendMessage();
+            }
+          }
+        }}
+      />
+
+      {message.trim() || selectedFile ? (
+        <button
+          onClick={() => {
+            if (selectedFile) {
+              uploadFile(selectedFile, fileType);
+              setSelectedFile(null);
+              setFileType(null);
+            } else if (editingMessageId) {
+              updateMessage();
+            } else {
+              sendMessage();
+            }
+          }}
+          className="bg-green-500 text-white p-2 rounded-full"
+        >
+          <Send size={18} />
+        </button>
+      ) : (
+        <button
+          onMouseEnter={() => setIsMicHover(true)}
+          onMouseLeave={() => setIsMicHover(false)}
+          className="rounded-full flex items-center justify-center transition-all duration-200 hover:bg-green-500"
+          style={{ width: "40px", height: "40px" }}
+        >
+          <Mic
+            size={isMicHover ? 24 : 20}
+            className={isMicHover ? "text-white" : "text-black"}
+          />
+        </button>
+      )}
+
+    </div>
+  </div>
+</div>
 
   {/*==================== POPUPS */}
       {openDelete && (
         <div ref={deleteRef} className="">
           <ChatDeleteSection
-            position={menuPosition}   // 👈 ADD THIS
-            messageId={selectedMessageId}
-            messageText={messages.find(m => m.id === selectedMessageId)?.text}
-            createdAt={messages.find(m => m.id === selectedMessageId)?.date}
-            me={messages.find(m => m.id === selectedMessageId)?.me}
-            refresh={fetchMessages}
-            close={() => setOpenDelete(false)}
-            startEdit={(id, text) => {
-              setEditingMessageId(id);
-              setEditingText(text);
-              setMessage(text);
-            }}
-          />
+  position={menuPosition}
+  messageId={selectedMessageId}
+  messageText={messages.find(m => m.id === selectedMessageId)?.text}
+  createdAt={messages.find(m => m.id === selectedMessageId)?.date}
+  me={messages.find(m => m.id === selectedMessageId)?.me}
+  refresh={fetchMessages}
+  close={() => setOpenDelete(false)}
+  startEdit={(id, text) => {
+    setEditingMessageId(id);
+    setEditingText(text);
+    setMessage(text);
+  }}
+
+  onReply={(msg) => {
+  const fullMsg = messages.find(m => m.id === msg.id);
+
+  setReplyMsg({
+  id: fullMsg.id,
+  text: fullMsg.text,
+  sender: fullMsg.sender,
+  fileType: fullMsg.fileType   // ⭐ ADD THIS
+});
+}}
+  onCopy={(text) => navigator.clipboard.writeText(text)}
+  onForward={(msg) => console.log("Forward:", msg)}
+
+
+  openSeenUsers={() => {
+    const msg = messages.find(m => m.id === selectedMessageId);
+    openSeenUsers(msg);
+  }}
+/>
        </div>
       )}
 
@@ -1307,6 +1443,15 @@ const uploadFile = async (file, type) => {
         </div>
 
       )}
+
+
+      {showSeenUsers && (
+  <ChatSeenUsers
+    users={selectedSeenUsers}
+    getProfileImage={getProfileImage}
+    onClose={() => setShowSeenUsers(false)}
+  />
+)}
 
       {/* RINGTONE */}
 

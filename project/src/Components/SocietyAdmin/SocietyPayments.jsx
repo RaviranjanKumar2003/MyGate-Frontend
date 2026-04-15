@@ -47,7 +47,7 @@ export default function SocietyAdminPayments() {
   /* ================= USERS ================= */
   const fetchUsers = async () => {
     const res = await axios.get(
-      `${BASE_URL}/api/users/society/${SOCIETY_ID}/role/NORMAL_USER`
+      `${BASE_URL}/users/society/${SOCIETY_ID}/role/NORMAL_USER`
     );
     setUsers(res.data || []);
   };
@@ -57,11 +57,11 @@ export default function SocietyAdminPayments() {
     setLoading(true);
 
     const adminRes = await axios.get(
-      `${BASE_URL}/api/monthly-bills/society-admin/society/${SOCIETY_ID}`
+      `${BASE_URL}/monthly-bills/society-admin/society/${SOCIETY_ID}`
     );
 
     const superRes = await axios.get(
-      `${BASE_URL}/api/monthly-bills/super-admin/society/${SOCIETY_ID}`
+      `${BASE_URL}/monthly-bills/super-admin/society/${SOCIETY_ID}`
     );
 
     const adminBills = adminRes.data || [];
@@ -130,7 +130,7 @@ export default function SocietyAdminPayments() {
       };
 
       const billRes = await axios.post(
-        `${BASE_URL}/api/monthly-bills/society-admin/monthly-bill`,
+        `${BASE_URL}/monthly-bills/society-admin/monthly-bill`,
         payload
       );
 
@@ -138,7 +138,7 @@ export default function SocietyAdminPayments() {
 
       for (let item of validItems) {
         await axios.post(
-          `${BASE_URL}/api/bill-items/society/${SOCIETY_ID}`,
+          `${BASE_URL}/bill-items/society/${SOCIETY_ID}`,
           {
             monthlyBillId: billId,
             title: item.title,
@@ -163,13 +163,13 @@ export default function SocietyAdminPayments() {
   /* ================= PAYMENT FLOW ================= */
   const openPayment = async (bill) => {
     setSelectedBill(bill);
-    const res = await axios.get(`${BASE_URL}/api/companies/type/PAYMENT`);
+    const res = await axios.get(`${BASE_URL}/companies/type/PAYMENT`);
 
     const withLogo = await Promise.all(
       (res.data || []).map(async (c) => {
         try {
           const img = await axios.get(
-            `${BASE_URL}/api/companies/image/get/company/${c.id}`,
+            `${BASE_URL}/companies/image/get/company/${c.id}`,
             { responseType: "blob" }
           );
           return { ...c, logo: URL.createObjectURL(img.data) };
@@ -186,13 +186,13 @@ export default function SocietyAdminPayments() {
 
   const selectPaymentMode = async (mode) => {
     if (mode.name?.toUpperCase().includes("UPI")) {
-      const res = await axios.get(`${BASE_URL}/api/companies/type/SUB_PAYMENT`);
+      const res = await axios.get(`${BASE_URL}/companies/type/SUB_PAYMENT`);
 
       const withLogo = await Promise.all(
         (res.data || []).map(async (c) => {
           try {
             const img = await axios.get(
-              `${BASE_URL}/api/companies/image/get/company/${c.id}`,
+              `${BASE_URL}/companies/image/get/company/${c.id}`,
               { responseType: "blob" }
             );
             return { ...c, logo: URL.createObjectURL(img.data) };
@@ -421,7 +421,7 @@ function BillList({ bills, payNow }) {
             {payNow && b.status === "PENDING" && (
               <button
                 onClick={() => payNow(b)}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2 rounded-lg text-sm font-semibold"
+                className="w-full bg-linear-to-r from-green-500 to-emerald-600 text-white py-2 rounded-lg text-sm font-semibold"
               >
                 Pay Now
               </button>

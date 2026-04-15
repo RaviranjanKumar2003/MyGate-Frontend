@@ -34,7 +34,7 @@ export default function SuperPayment() {
   /* ================= FETCH SOCIETIES ================= */
   useEffect(() => {
     axios
-      .get(`${BASE_URL}/api/societies`)
+      .get(`${BASE_URL}/societies`)
       .then((res) => setSocieties(res.data || []))
       .catch(() => console.error("Society fetch error"));
   }, []);
@@ -42,7 +42,7 @@ export default function SuperPayment() {
   /* ================= SUMMARY ================= */
   useEffect(() => {
     axios
-      .get(`${BASE_URL}/api/monthly-bills/super-admin`)
+      .get(`${BASE_URL}/monthly-bills/super-admin`)
       .then((res) => {
         const bills = res.data || [];
 
@@ -82,7 +82,7 @@ useEffect(() => {
 
   axios
     .get(
-      `${BASE_URL}/api/monthly-bills/super-admin/society/${selectedSocietyId}`
+      `${BASE_URL}/monthly-bills/super-admin/society/${selectedSocietyId}`
     )
     .then((res) => {
       const bills = res.data || [];

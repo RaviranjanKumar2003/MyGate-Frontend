@@ -13,6 +13,7 @@
     "@jitsi/react-sdk": "^1.4.4",
     "@stomp/stompjs": "^7.3.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@zegocloud/zego-uikit-prebuilt": "^2.17.3",
     "@zxing/browser": "^0.1.5",
     "axios": "^1.13.2",
     "emoji-picker-react": "^4.18.0",
@@ -23,6 +24,7 @@
     "react-dom": "^19.2.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.12.0",
+    "react-toastify": "^11.0.5",
     "sockjs-client": "^1.6.1",
     "stompjs": "^2.3.3",
     "tailwindcss": "^4.1.18"
