@@ -175,9 +175,7 @@ const playIncomingRing = () => {
 };
 
 useEffect(() => {
-  if (incomingCall) {
-    playIncomingRing();
-  } else {
+  if (!incomingCall) {
     stopRingtone();
   }
 }, [incomingCall]);
@@ -349,13 +347,16 @@ const handleFileSelect = (file, type) => {
 
   if (data.callerName === USER_NAME) return;
 
-  setIncomingCallData(data); // ⭐ ADD THIS
+  setIncomingCallData(data);
 
   setRoomName(data.roomName);
   setCallType(data.type);
 
-  setIncomingCall(true);
-  playIncomingRing();
+  // ✅ FIX: duplicate ringing stop
+  if (!incomingCall) {
+    setIncomingCall(true);
+    playIncomingRing();
+  }
 });
 
     // ✅ END CALL SUBSCRIPTION
@@ -385,8 +386,8 @@ const handleFileSelect = (file, type) => {
 
 
   useEffect(() => {
-  if (!startCall) {
-    stopRingtone();
+  if (startCall) {
+    stopRingtone();   // ✅ VERY IMPORTANT
   }
 }, [startCall]);
 
@@ -754,38 +755,36 @@ const uploadFile = async (file, type) => {
           size={20}
           className="cursor-pointer"
           onClick={() => {
+  if (!stompClient.connected) return;
 
-            if (!stompClient.connected) {
-              console.log("❌ Not connected yet");
-              return;
-            }
+  const room = `video-${SOCIETY_ID}`;
 
-            const room = `video-${SOCIETY_ID}`;
+  // 🔥 START CALL (IMPORTANT)
+  stompClient.publish({
+    destination: "/app/start-call",
+    body: JSON.stringify({
+      roomName: room,
+      callerName: USER_NAME,
+      type: "video"
+    })
+  });
 
-            stompClient.publish({
-              destination: "/app/start-call", // ⚠️ backend change kiya ho to yaha bhi change karo
-              body: JSON.stringify({
-                roomName: room,
-                callerName: USER_NAME,
-                type: "video"
-              })
-            });
+  // 🔥 JOIN CALL
+  stompClient.publish({
+    destination: "/app/join-call",
+    body: JSON.stringify({
+      roomName: room,
+      callerName: USER_NAME
+    })
+  });
 
-            stompClient.publish({
-              destination: "/app/join-call",
-              body: JSON.stringify({
-                roomName: room,
-                callerName: USER_NAME
-              })
-            });
+  playCallingRing();
 
-            playCallingRing();
-            setRoomName(room);
-            setCallType("video");         // onClose
-            setStartCall(true);
-            setIsAlone(false);
-
-          }}
+  setRoomName(room);
+  setCallType("video");
+  setStartCall(true);
+  setIsAlone(false);
+}}
        />
         <Search size={20}/>
 
