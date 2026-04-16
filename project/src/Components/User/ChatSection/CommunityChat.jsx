@@ -386,15 +386,10 @@ const handleFileSelect = (file, type) => {
 
 
   useEffect(() => {
-  if (startCall && !incomingCall) {
-    // ❌ outgoing call me band mat karo
-    return;
+  if (startCall) {
+    stopRingtone();   // ✅ VERY IMPORTANT
   }
-
-  if (!startCall) {
-    stopRingtone();
-  }
-}, [startCall, incomingCall]);
+}, [startCall]);
 
 
 //================end call
@@ -766,14 +761,13 @@ const uploadFile = async (file, type) => {
 
   // 🔥 START CALL (IMPORTANT)
   stompClient.publish({
-  destination: "/app/start-call",
-  body: JSON.stringify({
-    roomName: room,
-    callerName: USER_NAME,
-    callerId: USER_ID,   // ⭐ YAHI ADD KARNA HAI
-    type: "video"
-  })
-});
+    destination: "/app/start-call",
+    body: JSON.stringify({
+      roomName: room,
+      callerName: USER_NAME,
+      type: "video"
+    })
+  });
 
   // 🔥 JOIN CALL
   stompClient.publish({
