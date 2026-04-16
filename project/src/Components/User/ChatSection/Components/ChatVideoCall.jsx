@@ -1,64 +1,43 @@
+import { useEffect } from "react";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
-import { useEffect, useRef } from "react";
 
-const ChatVideoCall = ({ roomName, onClose }) => {
-  const containerRef = useRef(null);
+function ChatVideoCall({ roomName, onClose }) {
 
   useEffect(() => {
 
-    console.log("ROOM:", roomName);
-
-    if (!roomName) {
-      console.error("❌ roomName missing");
-      return;
-    }
-
     const appID = 605040740;
-    const serverSecret = "YOUR_NEW_SECRET_HERE";
+    const serverSecret = "5ea0cdbd8bd7b8d3e133bc245eb1302d";
 
-    if (!appID || !serverSecret) {
-      console.error("❌ Zego credentials missing");
-      return;
-    }
-
-    const userID = String(Date.now());
+    const userID = Date.now().toString();
     const userName = "User_" + userID;
 
-    let kitToken;
-
-    try {
-      kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-        appID,
-        serverSecret,
-        roomName,
-        userID,
-        userName
-      );
-    } catch (err) {
-      console.error("❌ Token generation failed:", err);
-      return;
-    }
-
-    if (!kitToken) {
-      console.error("❌ kitToken is null/undefined");
-      return;
-    }
-
-    
+    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+      appID,
+      serverSecret,
+      roomName,
+      userID,
+      userName
+    );
 
     const zp = ZegoUIKitPrebuilt.create(kitToken);
 
     zp.joinRoom({
-      container: containerRef.current,
+      container: document.getElementById("zego-video"),
       scenario: {
         mode: ZegoUIKitPrebuilt.GroupCall,
       },
-      onLeaveRoom: onClose,
+      onLeaveRoom: () => {
+        onClose(); // 🔴 call end
+      }
     });
 
-  }, [roomName]);
+  }, []);
 
-  return <div ref={containerRef} style={{ width: "100%", height: "100vh" }} />;
-};
+  return (
+    <div className="fixed inset-0 bg-black z-50">
+      <div id="zego-video" style={{ width: "100%", height: "100%" }} />
+    </div>
+  );
+}
 
 export default ChatVideoCall;

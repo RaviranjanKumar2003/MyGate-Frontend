@@ -1,85 +1,45 @@
-import React, { useEffect, useRef, useState } from "react";
-import { PhoneOff, Mic, MicOff } from "lucide-react";
+import { useEffect } from "react";
+import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 
 function ChatAudioCall({ roomName, onClose }) {
 
-  const localStream = useRef(null);
-  const [isMuted, setIsMuted] = useState(false);
-
   useEffect(() => {
 
-    const startAudio = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: false
-        });
+    const appID = 605040740;
+    const serverSecret = "5ea0cdbd8bd7b8d3e133bc245eb1302d";
 
-        localStream.current = stream;
+    const userID = Date.now().toString();
+    const userName = "User_" + userID;
 
-      } catch (err) {
-        console.error("Audio permission error:", err);
+    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+      appID,
+      serverSecret,
+      roomName,
+      userID,
+      userName
+    );
+
+    const zp = ZegoUIKitPrebuilt.create(kitToken);
+
+    zp.joinRoom({
+      container: document.getElementById("zego-audio"),
+      scenario: {
+        mode: ZegoUIKitPrebuilt.GroupCall,
+      },
+      turnOnCameraWhenJoining: false,
+      turnOnMicrophoneWhenJoining: true,
+      onLeaveRoom: () => {
+        onClose();
       }
-    };
-
-    startAudio();
-
-    return () => {
-      if (localStream.current) {
-        localStream.current.getTracks().forEach(track => track.stop());
-      }
-    };
+    });
 
   }, []);
 
-  /* ✅ MUTE TOGGLE FIX */
-  const toggleMute = () => {
-
-    if (!localStream.current) return;
-
-    const audioTrack = localStream.current.getAudioTracks()[0];
-
-    if (audioTrack) {
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMuted(!audioTrack.enabled); // ⭐ state update
-    }
-
-  };
-
   return (
-
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-white z-50">
-
-      <h2 className="text-xl font-semibold mb-2">Audio Call</h2>
-
-      <p className="text-sm opacity-80 mb-6">
-        Room: {roomName}
-      </p>
-
-      <div className="flex gap-6">
-
-        {/* ✅ MUTE BUTTON */}
-        <button
-          onClick={toggleMute}
-          className="bg-gray-700 p-4 rounded-full"
-        >
-          {isMuted ? <MicOff size={22}/> : <Mic size={22}/>}
-        </button>
-
-        {/* END CALL */}
-        <button
-          onClick={onClose}
-          className="bg-red-500 p-4 rounded-full"
-        >
-          <PhoneOff size={22}/>
-        </button>
-
-      </div>
-
+    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+      <div id="zego-audio" style={{ width: "100%", height: "100%" }} />
     </div>
-
   );
-
 }
 
 export default ChatAudioCall;
