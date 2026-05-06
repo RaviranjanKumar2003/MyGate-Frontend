@@ -799,7 +799,7 @@ const uploadFile = async (file, type) => {
 
     {/*================================ CHAT HERO ============================= */}
 
-    <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 mt-2 sm:mb-4 space-y-4">
+    <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 mt-12 sm:mb-4 space-y-4">
 
       {messages.map((msg) => {
 

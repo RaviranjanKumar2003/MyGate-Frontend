@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useRef  } from "react";
 import api from "../../api/axios";
 import {
   Layers,
@@ -13,12 +13,15 @@ import {
 const SOCIETY_ID = localStorage.getItem("societyId");
 
 export default function Overview() {
+
   const [buildings, setBuildings] = useState([]);
   const [expanded, setExpanded] = useState({});
   const [buildingName, setBuildingName] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
   const [selectedFlat, setSelectedFlat] = useState(null); // ✅ MOBILE ONLY
   const [toast, setToast] = useState({ show: false, msg: "" });
+  
+  const menuRef = useRef(null);
 
   const showToast = (msg) => {
     setToast({ show: true, msg });
@@ -27,11 +30,11 @@ export default function Overview() {
 
 
   /* ================= ADD BUILDING ================= */
-const addBuilding = async () => {
-  if (!buildingName.trim()) {
-    showToast("Building name required");
-    return;
-  }
+    const addBuilding = async () => {
+      if (!buildingName.trim()) {
+        showToast("Building name required");
+        return;
+      }
 
   try {
     await api.post(`/societies/${SOCIETY_ID}/buildings`, {
@@ -43,6 +46,21 @@ const addBuilding = async () => {
     showToast("Failed to add building");
   }
 };
+
+
+   useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (menuRef.current && !menuRef.current.contains(e.target)) {
+      setOpenMenu(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
 
 
   /* ================= FETCH ================= */
@@ -82,6 +100,7 @@ const addBuilding = async () => {
       showToast("Failed to load buildings");
     }
   };
+
 
   useEffect(() => {
     fetchBuildings();
@@ -211,7 +230,11 @@ const addBuilding = async () => {
 
   {/* DROPDOWN MENU */}
   {openMenu === `building-${b.id}` && (
-    <div className="absolute right-0 top-6 bg-white shadow rounded z-20 w-44 text-sm">
+    <div
+  onClick={(e) => e.stopPropagation()}
+  ref={menuRef}
+  className="absolute right-0 top-6 bg-white shadow rounded z-20 w-44 text-sm"
+>
       
       {/* UPDATE */}
       <button
@@ -284,7 +307,11 @@ const addBuilding = async () => {
 
               {/* FLOOR MENU */}
               {openMenu === floor.id && (
-                <div className="absolute right-3 top-8 bg-white shadow rounded z-10 text-sm w-44">
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  ref={menuRef}
+                  className="absolute right-3 top-8 bg-white shadow rounded z-10 text-sm w-44"
+                >
                   {/* ALWAYS */}
                   <button
                     className="px-3 py-2 hover:bg-gray-100 w-full text-left"

@@ -106,8 +106,8 @@ function SocietyComplaints() {
     (c) => c.createdByRole === "SOCIETY_ADMIN"
   );
   const residentComplaints = complaints.filter(
-    (c) => c.createdByRole === "NORMAL_USER"
-  );
+  (c) => c.createdByRole !== "SOCIETY_ADMIN"
+);
 
   // ================= CARD =================
   const ComplaintCard = ({ c, isResident }) => (

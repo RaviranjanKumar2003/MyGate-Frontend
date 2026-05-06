@@ -7,12 +7,12 @@ function UserNotice() {
   const [error, setError] = useState("");
 
   const SOCIETY_ID = localStorage.getItem("societyId");
-  const USER_ID = Number(localStorage.getItem("userId")); // ✅ ADD
+  const USER_ID = Number(localStorage.getItem("userId"));
 
   /* ================= FETCH NOTICES ================= */
   useEffect(() => {
-    if (!SOCIETY_ID) {
-      setError("Society not found");
+    if (!SOCIETY_ID || !USER_ID) {
+      setError("User or Society not found");
       setLoading(false);
       return;
     }
@@ -23,7 +23,7 @@ function UserNotice() {
         setError("");
 
         const res = await api.get(
-          `/notices/normal-user?societyId=${SOCIETY_ID}`
+          `/notices/normal-user?societyId=${SOCIETY_ID}&userId=${USER_ID}`
         );
 
         const data = res.data || [];
@@ -44,7 +44,7 @@ function UserNotice() {
     };
 
     fetchNotices();
-  }, [SOCIETY_ID]);
+  }, [SOCIETY_ID, USER_ID]);
 
   /* ================= MARK AS SEEN ================= */
   const markAsSeen = async (noticeId) => {
@@ -52,7 +52,7 @@ function UserNotice() {
       await api.post(`/notice-seen/${noticeId}/seen`, null, {
         params: {
           userId: USER_ID,
-          role: "NORMAL_USER", // ✅ IMPORTANT
+          role: "NORMAL_USER",
         },
       });
     } catch (err) {
@@ -63,9 +63,7 @@ function UserNotice() {
   /* ================= AUTO MARK AS SEEN ================= */
   useEffect(() => {
     if (notices.length > 0 && USER_ID) {
-      notices.forEach((n) => {
-        markAsSeen(n.id);
-      });
+      notices.forEach((n) => markAsSeen(n.id));
     }
   }, [notices, USER_ID]);
 
@@ -114,14 +112,13 @@ function UserNotice() {
             key={n.id}
             className="bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition"
           >
-            {/* ===== HEADER ===== */}
+            {/* HEADER */}
             <div className="flex justify-between items-start mb-2">
               <h3 className="text-lg font-semibold text-gray-800">
                 {n.title}
               </h3>
 
               <div className="flex gap-2 flex-wrap">
-                {/* Creator */}
                 <span
                   className={`text-xs px-2 py-1 rounded-full font-semibold ${
                     n.createdByRole === "SUPER_ADMIN"
@@ -134,7 +131,6 @@ function UserNotice() {
                     : "Society Admin"}
                 </span>
 
-                {/* Priority */}
                 {n.priority && (
                   <span
                     className={`text-xs px-2 py-1 rounded-full font-semibold ${priorityBadge(
@@ -147,12 +143,12 @@ function UserNotice() {
               </div>
             </div>
 
-            {/* ===== MESSAGE ===== */}
+            {/* MESSAGE */}
             <p className="text-sm text-gray-700 whitespace-pre-line">
               {n.message}
             </p>
 
-            {/* ===== ATTACHMENT ===== */}
+            {/* ATTACHMENT */}
             {n.attachmentUrl && (
               <a
                 href={n.attachmentUrl}
@@ -164,7 +160,7 @@ function UserNotice() {
               </a>
             )}
 
-            {/* ===== FOOTER ===== */}
+            {/* FOOTER */}
             <div className="mt-3 text-xs text-gray-400 flex justify-between flex-wrap gap-2">
               <span>
                 Posted on {new Date(n.createdAt).toLocaleString()}

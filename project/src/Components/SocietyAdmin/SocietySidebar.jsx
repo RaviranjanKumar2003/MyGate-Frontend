@@ -21,7 +21,7 @@ export default function SocietySidebar({ open, onClose }) {
     adminName: localStorage.getItem("userName") || "",
     adminEmail: localStorage.getItem("userEmail") || "",
     societyName: localStorage.getItem("societyName") || "",
-    mobileNumber: ""
+    mobileNumber: localStorage.getItem("mobileNumber") || ""
   });
 
   const [showProfile, setShowProfile] = useState(false);
@@ -75,6 +75,7 @@ export default function SocietySidebar({ open, onClose }) {
       if (res.data.adminEmail) {
         localStorage.setItem("userEmail", res.data.adminEmail);
       }
+      localStorage.setItem("mobileNumber", res.data.mobileNumber);
       alert("Profile update Successfully");
 
     } catch (err) {
@@ -103,6 +104,7 @@ export default function SocietySidebar({ open, onClose }) {
   const links = [
     { name: "Buildings", path: "/society-admin/dashboard", icon: <Building2 size={20} /> },
     { name: "Members / Flats", path: "/society-admin/flatstable", icon: <Users size={20} /> },
+    { name: "Flat Approvals", path: "/society-admin/flat-approvals", icon: <Building2 size={20} /> },
     { name: "Notices", path: "/society-admin/notices", icon: <FileText size={20} /> },
     { name: "Complaints", path: "/society-admin/complaints", icon: <AlertCircle size={20} /> },
     { name: "Payments", path: "/society-admin/payments", icon: <DollarSign size={20} /> },
@@ -142,9 +144,9 @@ export default function SocietySidebar({ open, onClose }) {
                 {editMode && (
                   <label
                     htmlFor="profileImage"
-                    className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer"
+                    className="absolute bottom-0 right-0 bg-indigo-600 text-white h-7 w-7 flex justify-center items-center rounded-full cursor-pointer"
                   >
-                    <FaCamera />
+                    <FaCamera className="text-white"/>
                   </label>
                 )}
                 <input

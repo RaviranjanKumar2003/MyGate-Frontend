@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/axios";
-import { Users, Truck, CreditCard, AlertCircle, Bell } from "lucide-react";
+import { Users, Truck, CreditCard, AlertCircle } from "lucide-react";
 
 const STAT_CARDS = [
   { label: "Visitors Today", key: "visitors", icon: Users },
@@ -26,56 +26,81 @@ export default function Dash({ userProfile }) {
   }, [userProfile?.societyId, userProfile?.flatId]);
 
   const fetchStats = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const societyId = userProfile.societyId;
-    const flatId = userProfile.flatId;
+      const societyId = userProfile.societyId;
+      const flatId = userProfile.flatId;
+      const userId = localStorage.getItem("userId");
 
-    const urls = {
-      visitors: `/visitors/society/${societyId}/flat/${flatId}/count/today`,
-      deliveries: `/deliveries/society/${societyId}/flat/${flatId}/pending/count`,
-      payments: `/payments/society/${societyId}/flat/${flatId}/pending/count`,
-      complaints: `/complaints/society/${societyId}/flat/${flatId}/pending/count`,
-    };
+      const urls = {
+        visitors: `/visitors/society/${societyId}/flat/${flatId}/count/today`,
+        deliveries: `/deliveries/society/${societyId}/flat/${flatId}/pending/count`,
+      };
 
-    const results = await Promise.allSettled([
-      api.get(urls.visitors),
-      api.get(urls.deliveries),
-      api.get(urls.payments),
-      api.get(urls.complaints),
-    ]);
+      const results = await Promise.allSettled([
+        api.get(urls.visitors),
+        api.get(urls.deliveries),
+        api.get("/complaints"), // ✅ get all complaints
+        api.get(`/monthly-bills/user/${userId}`), // ✅ payments
+      ]);
 
-    setStats({
-      visitors:
-        results[0].status === "fulfilled"
-          ? results[0].value.data.count
-          : 0,
+      /* ================= PAYMENTS ================= */
+      let pendingPayments = 0;
 
-      deliveries:
-        results[1].status === "fulfilled"
-          ? results[1].value.data.count
-          : 0,
+      if (results[3].status === "fulfilled") {
+        const billsData = results[3].value.data || [];
 
-      payments:
-        results[2].status === "fulfilled"
-          ? results[2].value.data.count
-          : 0,
+        // 👉 Choose ONE:
 
-      complaints:
-        results[3].status === "fulfilled"
-          ? results[3].value.data.count
-          : 0,
+        // ✅ Option A: Amount (₹)
+        pendingPayments = billsData.reduce(
+          (sum, b) =>
+            sum + ((b.totalAmount || 0) - (b.paidAmount || 0)),
+          0
+        );
 
-      notifications: 0,
-    });
-  } catch (err) {
-    console.error("Dashboard stats error:", err);
-  } finally {
-    setLoading(false);
-  }
-};
+        // ✅ Option B (recommended): Count
+        // pendingPayments = billsData.filter(
+        //   b => (b.totalAmount || 0) > (b.paidAmount || 0)
+        // ).length;
+      }
 
+      /* ================= COMPLAINTS ================= */
+      let pendingComplaints = 0;
+
+      if (results[2].status === "fulfilled") {
+        const complaintsData = results[2].value.data || [];
+
+        pendingComplaints = complaintsData.filter(
+          (c) => c.status === "PENDING"
+        ).length;
+      }
+
+      /* ================= FINAL STATE ================= */
+      setStats({
+        visitors:
+          results[0].status === "fulfilled"
+            ? results[0].value.data.count
+            : 0,
+
+        deliveries:
+          results[1].status === "fulfilled"
+            ? results[1].value.data.count
+            : 0,
+
+        complaints: pendingComplaints, // ✅ FIXED
+
+        payments: pendingPayments, // ✅ FIXED
+
+        notifications: 0,
+      });
+    } catch (err) {
+      console.error("Dashboard stats error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="p-4 pb-20">
@@ -101,8 +126,10 @@ export default function Dash({ userProfile }) {
               <div className="p-3 rounded-full bg-indigo-100 text-indigo-600">
                 <Icon size={22} />
               </div>
+
               <div>
                 <p className="text-sm text-gray-500">{card.label}</p>
+
                 <p className="text-xl font-bold">
                   {loading ? "…" : stats[card.key]}
                 </p>

@@ -21,6 +21,7 @@ import Payments from "./Components/SocietyAdmin/SocietyPayments";
 import FlatsTable from "./Components/SocietyAdmin/FlatsTable";
 import Complaints from "./Components/SocietyAdmin/SocietyComplaints";
 import SASettings from "./Components/SocietyAdmin/SASettings";
+import FlatApprovals from "./Components/SocietyAdmin/FlatApprovals";
 
 function App() {
   // console.log("ENV FULL:", import.meta.env);
@@ -92,6 +93,7 @@ function App() {
           <Route path="flatstable" element={<FlatsTable />} />
           <Route path="complaints" element={<Complaints />} />
           <Route path="settings" element={<SASettings />} />
+          <Route path="flat-approvals" element={<FlatApprovals />} />
         </Route>
 
         {/* STAFF */}

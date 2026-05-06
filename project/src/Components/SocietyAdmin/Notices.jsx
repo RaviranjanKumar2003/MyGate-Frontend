@@ -46,38 +46,29 @@ export default function Notices() {
 
   // ================= FETCH NOTICES =================
   useEffect(() => {
-    if (tab === "CREATE") return;
+  if (tab === "CREATE") return;
 
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        let res;
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      let res;
 
-        if (tab === "SUPER") {
-          res = await api.get(
-            `/notices/society/${SOCIETY_ID}/societyAdminId/${USER_ID}`
-          );
-        } else {
-          res = await api.get(`/notices/societyAdminId/${USER_ID}`);
-        }
-
-        const data = res.data || [];
-
-        const filtered =
-          tab === "SUPER"
-            ? data.filter((n) => n.createdByRole === "SUPER_ADMIN")
-            : data.filter((n) => n.createdByRole === "SOCIETY_ADMIN");
-
-        setNotices(filtered);
-      } catch (err) {
-        console.error("FETCH NOTICE ERROR", err);
-      } finally {
-        setLoading(false);
+      if (tab === "SUPER") {
+        res = await api.get(`/notices/normal-user?userId=${USER_ID}&societyId=${SOCIETY_ID}`);
+      } else {
+        res = await api.get(`/notices/societyAdminId/${USER_ID}`);
       }
-    };
 
-    fetchData();
-  }, [tab, SOCIETY_ID, USER_ID]);
+      setNotices(res.data || []);
+    } catch (err) {
+      console.error("FETCH NOTICE ERROR", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [tab, SOCIETY_ID, USER_ID]);
 
   // ================= AUTO MARK AS SEEN =================
   useEffect(() => {

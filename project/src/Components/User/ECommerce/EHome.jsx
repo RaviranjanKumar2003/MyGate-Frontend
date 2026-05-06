@@ -85,6 +85,37 @@ function ProductImageSlider({ images, productId, baseUrl }) {
   );
 }
 
+
+function FlatImageSlider({ images, flatId, baseUrl }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (!images || images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [images]);
+
+  if (!images || images.length === 0) {
+    return (
+      <img
+        src="https://via.placeholder.com/300x200"
+        className="w-full h-40 object-cover rounded"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={`${baseUrl}/flat/image/${flatId}/${images[index]}`}
+      className="w-full h-40 object-cover rounded"
+    />
+  );
+}
+
 function EHome() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -92,11 +123,26 @@ function EHome() {
   const [loading, setLoading] = useState(false);
 
   const buyerId = Number(localStorage.getItem("userId"));
+
   const BASE_URL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/products`
   : "http://localhost:8080/api/products";
 
+  const FLAT_BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/flat-listings`
+  : "http://localhost:8080/api/flat-listings";
+
   const [selectedProduct, setSelectedProduct] = useState(null);
+
+
+  const [flats, setFlats] = useState([]);
+  const [selectedFlat, setSelectedFlat] = useState(null);
+
+  const [flatOffers, setFlatOffers] = useState([]);
+  const [showFlatOffersModal, setShowFlatOffersModal] = useState(false);
+
+  const [flatSeller, setFlatSeller] = useState(null);
+  const [showFlatSellerModal, setShowFlatSellerModal] = useState(false);
 
   /* ================= FETCH PRODUCTS ================= */
   const fetchProducts = async () => {
@@ -111,13 +157,25 @@ function EHome() {
     }
   };
 
+
+  const fetchFlats = async () => {
+  try {
+    const societyId = localStorage.getItem("societyId");
+
+    const res = await api.get(`/flat-listings/society/${societyId}`);
+    setFlats(res.data || []);
+  } catch (err) {
+    console.error("Flat fetch error:", err);
+  }
+};
+
   const [offers, setOffers] = useState([]);
-const [showOffersModal, setShowOffersModal] = useState(false);
+  const [showOffersModal, setShowOffersModal] = useState(false);
 
-const [seller, setSeller] = useState(null);
-const [showSellerModal, setShowSellerModal] = useState(false);
+  const [seller, setSeller] = useState(null);
+  const [showSellerModal, setShowSellerModal] = useState(false);
 
-const fetchOffers = async (productId) => {
+  const fetchOffers = async (productId) => {
   try {
     const res = await api.get(`/offers/product/${productId}`);
     setOffers(res.data || []);
@@ -140,6 +198,17 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, []);
 
+
+const [showFlatOfferBtn, setShowFlatOfferBtn] = useState(true);
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setShowFlatOfferBtn((prev) => !prev);
+  }, 10000);
+
+  return () => clearInterval(interval);
+}, []);
+
 //============= OFFER
 const sendOffer = async (product) => {
   const price = prompt("Enter your offer price");
@@ -151,7 +220,10 @@ const sendOffer = async (product) => {
 
   try {
     const existingOffer = offers.find(
-      (o) => Number(o.buyerId) === Number(buyerId)
+      (o) =>
+        Number(o.buyerId) === Number(buyerId) &&
+        Number(o.refId) === Number(product.id) &&
+        o.refType === "PRODUCT"
     );
 
     if (existingOffer) {
@@ -162,9 +234,10 @@ const sendOffer = async (product) => {
 
       alert("✏️ Offer Updated");
     } else {
-      // ✅ CREATE OFFER
+      // ✅ CREATE OFFER (FIXED 🔥)
       await api.post("/offers", {
-        productId: Number(product.id),
+        refId: Number(product.id),
+        refType: "PRODUCT",
         buyerId: Number(buyerId),
         offerPrice: Number(price),
       });
@@ -172,11 +245,71 @@ const sendOffer = async (product) => {
       alert("✅ Offer Sent");
     }
 
-    // 🔥 refresh offers
     fetchOffers(product.id);
 
   } catch (err) {
     console.error("Offer Error:", err.response?.data || err);
+    alert("❌ Failed");
+  }
+};
+
+
+    const fetchFlatOffers = async (flatId) => {
+  try {
+    console.log("Fetching flat offers for:", flatId); // 👈 ADD
+
+    const res = await api.get(`/offers/flat/${flatId}`);
+
+    console.log("Response:", res.data); // 👈 ADD
+
+    setFlatOffers(res.data || []);
+    setShowFlatOffersModal(true);
+
+  } catch (err) {
+    console.error("Flat offer error:", err.response || err);
+  }
+};
+
+const sendFlatOffer = async (flat) => {
+  const price = prompt("Enter offer price");
+
+  if (!price || isNaN(price) || Number(price) <= 0) {
+    alert("❌ Invalid price");
+    return;
+  }
+
+  try {
+    // 🔥 CHECK EXISTING OFFER
+    const existingOffer = flatOffers.find(
+      (o) =>
+        Number(o.buyerId) === Number(buyerId) &&
+        Number(o.refId) === Number(flat.id) &&
+        o.refType === "FLAT"
+    );
+
+    if (existingOffer) {
+      // ✏️ UPDATE
+      await api.put(`/offers/${existingOffer.id}`, {
+        offerPrice: Number(price),
+      });
+
+      alert("✏️ Offer Updated");
+    } else {
+      // ✅ CREATE (FIXED 🔥🔥🔥)
+      await api.post("/offers", {
+        refId: Number(flat.id),
+        refType: "FLAT",
+        buyerId: Number(buyerId),
+        offerPrice: Number(price),
+      });
+
+      alert("✅ Offer Sent");
+    }
+
+    fetchFlatOffers(flat.id);
+
+  } catch (err) {
+    console.error(err);
     alert("❌ Failed");
   }
 };
@@ -195,9 +328,10 @@ const sendOffer = async (product) => {
   };
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, []);
+  fetchProducts();
+  fetchCategories();
+  fetchFlats(); // ✅ ADD THIS
+}, []);
 
   /* ================= ADD TO CART ================= */
   const addToCart = async (product) => {
@@ -418,10 +552,13 @@ const sortedOffers = [...offers].sort((a, b) => {
             <div className="col-span-full text-center py-10">
               🚫 No products found
             </div>
+
+            
           )}
-
-
+       
         </div>
+
+        
       )}
 
       {/* BUY MODAL */}
@@ -433,21 +570,21 @@ const sortedOffers = [...offers].sort((a, b) => {
       )}
 
       {showOffersModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-    <div className="bg-white p-4 rounded w-80 max-h-100 overflow-y-auto">
-      <h2 className="text-lg font-bold mb-2">All Offers</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-4 rounded w-80 max-h-100 overflow-y-auto">
+            <h2 className="text-lg font-bold mb-2">All Offers</h2>
 
-      {offers.length > 0 ? (
-       sortedOffers.map((o, i) => (
-          <div key={i} className="border-b py-2 text-sm">
-            <p>
-  👤 Buyer Name:{" "}
-  {o.buyerId === buyerId ? (
-    <span className="text-green-600 font-bold">Me</span>
-  ) : (
-    o.buyerName
-  )}
-</p>
+              {offers.length > 0 ? (
+              sortedOffers.map((o, i) => (
+             <div key={i} className="border-b py-2 text-sm">
+                <p>
+                  👤 Buyer Name:{" "}
+                  {o.buyerId === buyerId ? (
+                    <span className="text-green-600 font-bold">Me</span>
+                  ) : (
+                     o.buyerName
+                  )}
+                </p>
             <p>💰 Offer Price: ₹{o.offerPrice}</p>
           </div>
         ))
@@ -457,6 +594,35 @@ const sortedOffers = [...offers].sort((a, b) => {
 
       <button
         onClick={() => setShowOffersModal(false)}
+        className="mt-3 bg-red-500 text-white px-3 py-1 rounded w-full"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
+{showFlatOffersModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+    <div className="bg-white p-4 rounded w-80 max-h-100 overflow-y-auto">
+
+      <h2 className="text-lg font-bold mb-2">Flat Offers</h2>
+
+      {flatOffers.length > 0 ? (
+        flatOffers.map((o, i) => (
+          <div key={i} className="border-b py-2 text-sm">
+            <p>
+              👤 {o.buyerId === buyerId ? "Me" : o.buyerName}
+            </p>
+            <p>💰 ₹{o.offerPrice}</p>
+          </div>
+        ))
+      ) : (
+        <p>No offers yet</p>
+      )}
+
+      <button
+        onClick={() => setShowFlatOffersModal(false)}
         className="mt-3 bg-red-500 text-white px-3 py-1 rounded w-full"
       >
         Close
@@ -484,6 +650,100 @@ const sortedOffers = [...offers].sort((a, b) => {
   </div>
 )}
 
+{showFlatSellerModal && flatSeller && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
+    <div className="bg-white p-4 rounded w-80">
+
+      <h3 className="font-bold mb-2">Seller Details</h3>
+
+      <p>👤 {flatSeller.name}</p>
+      <p>📧 {flatSeller.email}</p>
+      <p>📞 {flatSeller.mobile}</p>
+
+      {/* 🔥 CALL NOW BUTTON */}
+      <a
+        href={`tel:${flatSeller.mobile}`}
+        className="block w-full bg-green-600 text-white text-center mt-3 p-2 rounded"
+      >
+        📞 Call Now
+      </a>
+
+      <button
+        onClick={() => setShowFlatSellerModal(false)}
+        className="w-full bg-gray-500 text-white mt-2 p-1 rounded"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
+   {/* ================= FLATS ================= */}
+<h2 className="text-xl font-bold mt-10 mb-4">Available Flats 🏠</h2>
+
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+  {flats
+  .filter((f) => Number(f.ownerId) !== Number(buyerId)) // 🔥 IMPORTANT
+  .map((f) => (
+    <div key={f.id} className="bg-white p-3 rounded shadow">
+
+      <FlatImageSlider
+        images={f.images}
+        flatId={f.id}
+        baseUrl={FLAT_BASE_URL}
+      />
+
+      <h3 className="font-semibold mt-2">
+        🏠 Flat {f.flatNumber || f.flatId}
+      </h3>
+
+      <p className="text-indigo-600 font-bold">
+        {f.type === "SELL"
+          ? `₹${f.price}`
+          : `₹${f.rent}/month`}
+      </p>
+
+      <p className="text-sm text-gray-500">
+        {f.description}
+      </p>
+
+      <div className="flex gap-2 mt-2">
+
+  {showOfferBtn ? (
+    <button
+      onClick={() => fetchFlatOffers(f.id)}
+      className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+    >
+      View Offers
+    </button>
+  ) : (
+    <button
+      onClick={() => {
+        setFlatSeller({
+          name: f.ownerName,
+          email: f.ownerEmail,
+          mobile: f.ownerMobile
+        });
+        setShowFlatSellerModal(true);
+      }}
+      className="bg-gray-600 text-white px-2 py-1 rounded text-xs"
+    >
+      View Seller
+    </button>
+  )}
+
+  <button
+    onClick={() => sendFlatOffer(f)}
+    className="bg-purple-600 text-white px-2 py-1 rounded text-xs"
+  >
+    Make Offer 💰
+  </button>
+
+</div>
+
+    </div>
+  ))}
+</div>
     </div>
   );
 }

@@ -195,8 +195,8 @@ function UserSidebar({
                   className="h-24 w-24 rounded-full object-cover"
                 />
                 {editMode && (
-                  <label className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer">
-                    <FaCamera />
+                  <label className="absolute bottom-0 right-0 bg-indigo-600 text-white flex justify-center items-center h-7 w-7 rounded-full cursor-pointer">
+                    <FaCamera className="text-white"/>
                     <input hidden type="file" onChange={handleImageChange} />
                   </label>
                 )}

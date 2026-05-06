@@ -40,6 +40,12 @@ export default function FlatsOverview() {
   
 
   /* ================= STATE ================= */
+
+  const [historyTab, setHistoryTab] = useState("OWNER");
+
+  const [isLiving, setIsLiving] = useState(true);
+
+
   const [buildings, setBuildings] = useState([]);
   const [floors, setFloors] = useState([]);
   const [flats, setFlats] = useState([]);
@@ -87,16 +93,34 @@ export default function FlatsOverview() {
 
   const [imageFile, setImageFile] = useState(null); // for both member/staff
 
-  /* ================= LOAD STAFF ================= */
-  /* ================= LOAD STAFF ================= */
-const loadStaff = async () => {
+  /*=================================================*/
+    const [historyModal, setHistoryModal] = useState(false);
+    const [historyData, setHistoryData] = useState([]);
+    const [historyFlat, setHistoryFlat] = useState(null);
+
+
+    const loadHistory = async (flat) => {
   try {
-    const res = await axios.get(`${BASE_URL}/users/society/${SOCIETY_ID}/role/STAFF`);
-    setStaffList(res.data);
+    setHistoryFlat(flat);
+    const res = await axios.get(`${BASE_URL}/flat/${flat.id}/history`);
+    console.log("HISTORY DATA:", res.data); 
+    setHistoryData(res.data);
+    setHistoryModal(true);
   } catch (err) {
-    console.error("Failed to load staff:", err);
+    console.error(err);
+    alert("❌ Failed to load history");
   }
 };
+
+  /* ================= LOAD STAFF ================= */
+  const loadStaff = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/users/society/${SOCIETY_ID}/role/STAFF`);
+      setStaffList(res.data);
+    } catch (err) {
+      console.error("Failed to load staff:", err);
+    }
+  };
 
 
   useEffect(() => {
@@ -201,31 +225,37 @@ const loadStaff = async () => {
 
   /* ================= DELETE ================= */
   const deleteMember = async (userId) => {
-  if (!window.confirm("Are you sure you want to delete this member?")) return;
+  const flatId = viewFlat?.id;   // ✅ safe copy
+  const flatNumber = viewFlat?.flatNumber;
+
+  if (!window.confirm("Are you sure?")) return;
 
   try {
-    // Delete the user
     await axios.delete(`${BASE_URL}/users/society/${SOCIETY_ID}/user/${userId}`);
 
-    // Update the flat status to VACANT
-    await axios.put(
-      `${BASE_URL}/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${viewFlat.id}`,
-      { flatNumber: viewFlat.flatNumber, flatStatus: "VACANT" }
+    if (flatId) {
+      await axios.put(
+        `${BASE_URL}/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${flatId}`,
+        { flatNumber, flatStatus: "VACANT" }
+      );
+    }
+
+    alert("Deleted successfully");
+
+    setFlats(prev =>
+      prev.map(f =>
+        f.id === flatId ? { ...f, flatStatus: "VACANT" } : f
+      )
     );
 
-    alert("✅ Member deleted and flat marked as VACANT");
-
-    // Refresh flats and counts
-    setFlats(prev => prev.map(f => f.id === viewFlat.id ? { ...f, flatStatus: "VACANT" } : f));
     loadCounts();
 
-    // Close modal
     setViewFlat(null);
     setViewMember(null);
 
   } catch (err) {
     console.error(err);
-    alert("❌ Failed to delete member");
+    alert("Delete failed");
   }
 };
 
@@ -255,54 +285,48 @@ const loadStaff = async () => {
 
   /* ================= ADD MEMBER ================= */
   const saveMember = async () => {
-    try {
-      const payload = {
-        name: member.name,
-        email: member.email,
-        password: member.password,
-        mobileNumber: member.mobileNumber,
-        userRole: "NORMAL_USER",
-        userStatus: "ACTIVE",
-        normalUserType: member.normalUserType,
-        societyId: SOCIETY_ID,
-        buildingId: parseInt(buildingId),
-        floorId: parseInt(floorId),
-        flatId: parseInt(memberFlat.id),
-      };
+  try {
+    const payload = {
+      name: member.name,
+      email: member.email,
+      password: member.password,
+      mobileNumber: member.mobileNumber,
+      userRole: "NORMAL_USER",
+      userStatus: "ACTIVE",
+      normalUserType: member.normalUserType,
+      societyId: SOCIETY_ID,
+      buildingId: parseInt(buildingId),
+      floorId: parseInt(floorId),
+      flatId: parseInt(memberFlat.id),
+      isLiving: isLiving
+    };
 
-      const res = await axios.post(`${BASE_URL}/users`, payload);
-      const createdUser = res.data;
+    await axios.post(`${BASE_URL}/users`, payload);
 
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append("image", imageFile);
-        await axios.post(
-          `${BASE_URL}/users/society/${SOCIETY_ID}/image/upload/${createdUser.id}`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      }
+    alert("✅ Member added successfully");
 
-      const newStatus =
-        member.normalUserType === "OWNER" ? "OWNER_OCCUPIED" : "TENANT_OCCUPIED";
+    setMemberFlat(null);
+    setMember({
+      name: "",
+      email: "",
+      password: "",
+      mobileNumber: "",
+      normalUserType: "",
+    });
+    setIsLiving(true);
+    setImageFile(null);
 
-      await axios.put(
-        `${BASE_URL}/flats/society/${SOCIETY_ID}/building/${buildingId}/floor/${floorId}/flat/${memberFlat.id}`,
-        { flatNumber: memberFlat.flatNumber, flatStatus: newStatus }
-      );
+    loadCounts();
 
-      alert("✅ Member added successfully");
-      setMemberFlat(null);
-      setMember({ name: "", email: "", password: "", mobileNumber: "", normalUserType: "" });
-      setImageFile(null);
-      loadCounts();
-    } catch (err) {
-      console.error(err.response?.data || err);
-      alert(err.response?.data?.message || "❌ Failed to add member");
-    }
-  };
+  } catch (err) {
+    console.error(err.response?.data || err);
+    alert(err.response?.data?.message || "❌ Failed to add member");
+  }
+};
 
   /* ================= VIEW MEMBER ================= */
+
+  const [showHistory, setShowHistory] = useState(false);
   const openViewMember = async flat => {
     try {
       setViewFlat(flat);
@@ -356,11 +380,33 @@ const loadStaff = async () => {
               <td className={`border px-4 py-2 ${statusMap[f.flatStatus]?.color}`}>
                 {statusMap[f.flatStatus]?.label}
 
+                {/* VACANT */}
                 {ALLOW_ADD_MEMBER.includes(f.flatStatus) && (
-                  <button onClick={() => setMemberFlat(f)} className="ml-4 bg-black text-white px-2 py-1 rounded text-sm">+ Add Member</button>
-                )}
+                <>
+                  <button
+                    onClick={() => setMemberFlat(f)}
+                    className="ml-4 bg-black text-white px-2 py-1 rounded text-sm"
+                  >
+                     + Add Member
+                 </button>
+
+                  <button
+                    onClick={() => loadHistory(f)}
+                    className="ml-2 text-purple-600 text-sm"
+                  >
+                     History
+                  </button>
+                </>
+              )}
+
                 {["OWNER_OCCUPIED", "TENANT_OCCUPIED"].includes(f.flatStatus) && (
-                  <button onClick={() => openViewMember(f)} className="ml-2 text-blue-600 cursor-pointer" title="View Member"><Eye size={18} /></button>
+                  <button
+                    onClick={() => loadHistory(f)}
+                    className="ml-2 text-blue-600 cursor-pointer"
+                    title="View Details"
+                  >
+                   <Eye size={18} />
+                  </button>
                 )}
               </td>
               <td className="border px-4 py-2 text-center space-x-3">
@@ -459,6 +505,16 @@ const loadStaff = async () => {
               <option value="OWNER">OWNER</option>
               <option value="TENANT">TENANT</option>
             </select>
+
+            <select
+  className="border p-2 rounded w-full mb-2"
+  value={isLiving}
+  onChange={e => setIsLiving(e.target.value === "true")}
+>
+  <option value="true">Living (Yes)</option>
+  <option value="false">Not Living</option>
+</select>
+
             <input type="file" className="mb-4" onChange={e => setImageFile(e.target.files[0])} />
 
             <div className="flex justify-end gap-3">
@@ -468,6 +524,8 @@ const loadStaff = async () => {
           </div>
         </div>
       )}
+
+      
 
       {/* ================= VIEW MEMBER MODAL ================= */}
       {viewFlat && (
@@ -514,8 +572,149 @@ const loadStaff = async () => {
           </div>
         </div>
       )}
+
+  
+
+{historyModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className="bg-white p-4 sm:p-6 rounded w-[95%] sm:w-[90%] md:w-[70%] lg:w-[50%] max-h-[80vh] overflow-y-auto shadow-xl">
+
+      {/* ================= HEADER ================= */}
+      <h3 className="text-xl font-bold mb-3">
+        Ownership History (Flat {historyFlat?.flatNumber})
+      </h3>
+
+      {/* ================= OWNER / TENANT TABS ================= */}
+      <div className="flex gap-3 mb-4">
+
+        <button
+          onClick={() => setHistoryTab("OWNER")}
+          className={`px-4 py-2 rounded ${
+            historyTab === "OWNER"
+              ? "bg-green-600 text-white"
+              : "bg-gray-200"
+          }`}
+        >
+          OWNER
+        </button>
+
+        <button
+          onClick={() => setHistoryTab("TENANT")}
+          className={`px-4 py-2 rounded ${
+            historyTab === "TENANT"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200"
+          }`}
+        >
+          TENANT
+        </button>
+
+      </div>
+
+      {/* ================= CURRENT OCCUPANT ================= */}
+      {(() => {
+        const current = historyData.find(
+  h =>
+    h.active === true &&
+    (h.type || "").toUpperCase() === historyTab
+);
+
+        if (!current) {
+          return (
+            <p className="text-gray-500 mb-4">
+              No current {historyTab.toLowerCase()} found
+            </p>
+          );
+        }
+
+        return (
+          <div className="mb-5 p-4 border rounded-lg bg-green-50 border-green-200">
+
+            <p className="text-sm font-semibold text-green-700 mb-2">
+              🟢 Current {historyTab}
+            </p>
+
+            <div className="space-y-1 text-sm">
+              <p><b>Name:</b> {current.userName}</p>
+              <p><b>Type:</b> {current.type}</p>
+              <p><b>Start Date:</b> {current.startDate}</p>
+              <p><b>Status:</b> Active</p>
+            </div>
+
+            <button
+              onClick={() => deleteMember(current.userId)}
+              className="mt-3 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+            >
+              Remove Member
+            </button>
+
+          </div>
+        );
+      })()}
+
+      {/* ================= HISTORY TOGGLE ================= */}
+      <div
+        onClick={() => setShowHistory(!showHistory)}
+        className="flex justify-between items-center cursor-pointer bg-gray-100 p-2 rounded mb-2"
+      >
+        <p className="text-sm font-semibold text-gray-700">
+          Previous {historyTab} History
+        </p>
+
+        <span className="text-lg">
+          {showHistory ? "▲" : "▼"}
+        </span>
+      </div>
+
+      {/* ================= HISTORY LIST ================= */}
+      {showHistory && (
+        <div className="space-y-3 transition-all">
+
+          {historyData.filter(h => h.type === historyTab).length === 0 ? (
+            <p className="text-gray-500 text-sm">
+              No past {historyTab.toLowerCase()} history found
+            </p>
+          ) : (
+            historyData
+              .filter(h => !h.active && h.type === historyTab)
+              .map((h, i) => (
+                <div
+                  key={i}
+                  className="border rounded p-3 bg-gray-50 hover:bg-gray-100 transition"
+                >
+
+                  <div className="flex justify-between">
+                    <p className="font-medium">{h.userName}</p>
+                    <span className="text-xs text-gray-500">
+                      {h.type}
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-gray-600 mt-1">
+                    <p>Start: {h.startDate}</p>
+                    <p>End: {h.endDate || "N/A"}</p>
+                  </div>
+
+                </div>
+              ))
+          )}
+
+        </div>
+      )}
+
+      {/* ================= CLOSE ================= */}
+      <div className="flex justify-end mt-5">
+        <button
+          onClick={() => setHistoryModal(false)}
+          className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+        >
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
     </div>
   );
 }
-
-

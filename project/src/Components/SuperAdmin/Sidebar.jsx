@@ -92,7 +92,10 @@ function Sidebar({ open, onClose, activeMenu, setActiveMenu }) {
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               <img src={imagePreview || getProfileImage(profile.id)} className="h-28 w-28 rounded-full border object-cover" alt="profile" onError={e => e.target.src="/default-avatar.png"} />
-              {editMode && <label htmlFor="profileImage" className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer border border-white"><FaCamera /></label>}
+              {editMode && 
+              <label htmlFor="profileImage" className="absolute bottom-0 right-0 bg-indigo-600 text-white h-7 w-7 flex justify-center items-center rounded-full cursor-pointer border border-white">
+                <FaCamera className="text-white"/>
+              </label>}
               <input type="file" id="profileImage" accept="image/*" onChange={handleImageChange} className="hidden" />
             </div>
 
