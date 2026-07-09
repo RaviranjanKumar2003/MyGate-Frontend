@@ -30,6 +30,7 @@ function AllSocieties({ onViewDetails }) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSocieties();
   }, [activeTab]);
 
@@ -74,160 +75,403 @@ function AllSocieties({ onViewDetails }) {
   };
 
   return (
-    <div className="p-4 md:p-6 bg-linear-to-br from-indigo-50 via-white to-purple-50 min-h-screen mt-8">
+    <div className=" min-h-screen lg:-ml-12 mt-7 p-6 bg-linear-to-br
+from-[#eef2ff]
+via-[#ffffff]
+to-[#ecfeff]">
 
       {/* HEADER */}
-      <h1 className="text-2xl md:text-3xl font-bold mb-4 text-gray-800">
-        🏢 All Societies
-      </h1>
+<div className="mb-8">
+  <h1 className="text-3xl font-bold text-slate-800">
+    Society Management
+  </h1>
+
+  <p className="text-slate-500 mt-2">
+    Manage and monitor all registered societies
+  </p>
+</div>
 
       {/* TABS */}
-      <div className="flex gap-2 md:gap-4 mb-6 flex-wrap">
-        {["ACTIVE", "INACTIVE"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-full text-sm md:text-base font-semibold transition 
-            ${
-              activeTab === tab
-                ? "bg-linear-to-r from-indigo-500 to-purple-500 text-white shadow-md"
-                : "bg-white border hover:bg-gray-100"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+<div className="mb-8">
+  <div className="inline-flex p-1 bg-white rounded-2xl border border-slate-200 shadow-sm">
+
+    {["ACTIVE", "INACTIVE"].map((tab) => (
+      <button
+        key={tab}
+        onClick={() => setActiveTab(tab)}
+        className={`
+        px-6 py-2.5 rounded-xl text-sm font-semibold
+        transition-all duration-300
+
+        ${
+          activeTab === tab
+            ? "bg-linear-to-r from-cyan-500 to-blue-600 text-white shadow-lg"
+            : "text-slate-600 hover:bg-slate-100"
+        }
+        `}
+      >
+        {tab}
+      </button>
+    ))}
+  </div>
+</div>
 
       {/* CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {societies.map((s) => (
           <div
-            key={s.id}
-            className="relative bg-white/80 backdrop-blur p-4 rounded-2xl shadow-md hover:shadow-xl transition"
-          >
-            {/* MENU BUTTON */}
-            <button
-              className="absolute top-3 right-3"
-              onClick={() =>
-                setOpenMenuId(openMenuId === s.id ? null : s.id)
-              }
-            >
-              <MoreVertical size={18} />
-            </button>
+  key={s.id}
+  className="
+  relative
 
-            {/* MENU */}
-            {openMenuId === s.id && (
-              <div
-                ref={(el) => (menuRefs.current[s.id] = el)}
-                className="absolute right-3 top-10 bg-white shadow-lg rounded-lg w-32 z-10 overflow-hidden animate-fadeIn"
-              >
-                <button
-                  className="w-full px-4 py-2 hover:bg-indigo-50 text-left"
-                  onClick={() => {
-                    setEditSociety(s);
-                    setOpenMenuId(null);
-                  }}
-                >
-                  ✏️ Update
-                </button>
+  bg-white/80
+  backdrop-blur-xl
 
-                <button
-                  className="w-full px-4 py-2 text-red-600 hover:bg-red-50 text-left"
-                  onClick={() => handleDelete(s.id)}
-                >
-                  🗑 Delete
-                </button>
-              </div>
-            )}
+  border border-white/30
+  rounded-3xl
 
-            {/* CONTENT */}
-            <h2 className="font-bold text-lg text-indigo-600">
-              🏢 {s.name}
-            </h2>
+  p-5
 
-            <p className="text-sm text-gray-500">
-              👤 {s.societyAdmin?.adminName}
-            </p>
+  shadow-[0_10px_40px_rgba(0,0,0,0.06)]
 
-            <p className="text-sm text-gray-600">📍 {s.city}</p>
+  hover:-translate-y-2
+  hover:shadow-[0_20px_50px_rgba(0,0,0,0.12)]
 
-            <p className="text-sm text-gray-400 line-clamp-2">
-              {s.address}
-            </p>
+  transition-all duration-300
+  "
+>
+  {/* Menu Button */}
+  <button
+    className="
+    absolute top-4 right-4
 
-            {/* BUTTON */}
-            <button
-              onClick={() => onViewDetails(s)}
-              className="mt-4 w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2 rounded-lg hover:scale-105 transition"
-            >
-              View Details
-            </button>
-          </div>
+    h-10 w-10
+
+    rounded-xl
+    bg-slate-100
+
+    hover:bg-slate-200
+
+    flex items-center justify-center
+
+    transition-all
+    "
+    onClick={() =>
+      setOpenMenuId(
+        openMenuId === s.id ? null : s.id
+      )
+    }
+  >
+    <MoreVertical size={18} />
+  </button>
+
+  {/* Menu Back */}
+  {openMenuId === s.id && (
+    <div
+      ref={(el) =>
+        (menuRefs.current[s.id] = el)
+      }
+      className="
+      absolute right-4 top-16
+
+      bg-white
+      rounded-2xl
+
+      border border-slate-200
+
+      shadow-xl
+
+      overflow-hidden
+      z-20
+      "
+    >
+      <button
+        className="
+        block w-full
+        px-5 py-3
+
+        text-left
+        hover:bg-cyan-50
+        "
+        onClick={() => {
+          setEditSociety(s);
+          setOpenMenuId(null);
+        }}
+      >
+        ✏️ Update
+      </button>
+
+      <button
+        className="
+        block w-full
+        px-5 py-3
+
+        text-left
+        text-red-600
+
+        hover:bg-red-50
+        "
+        onClick={() => handleDelete(s.id)}
+      >
+        🗑 Delete
+      </button>
+    </div>
+  )}
+
+  {/* Society Icon */}
+  <div
+    className="
+    h-16 w-16
+
+    rounded-2xl
+
+    bg-linear-to-br
+    from-cyan-500
+    to-blue-600
+
+    flex items-center justify-center
+
+    text-white text-2xl
+
+    shadow-lg shadow-cyan-500/30
+    "
+  >
+    🏢
+  </div>
+
+  <h2 className="mt-5 text-xl font-bold text-slate-800">
+    {s.name}
+  </h2>
+
+  <div className="mt-4 space-y-2">
+
+    <p className="text-sm text-slate-600">
+      👤 {s.societyAdmin?.adminName}
+    </p>
+
+    <p className="text-sm text-slate-600">
+      📍 {s.city}
+    </p>
+
+    <p className="text-sm text-slate-500 line-clamp-2">
+      {s.address}
+    </p>
+  </div>
+
+  <button
+    onClick={() => onViewDetails(s)}
+    className="
+    mt-6
+
+    w-full py-3
+
+    rounded-2xl
+
+    bg-linear-to-r
+    from-cyan-500
+    to-blue-600
+
+    text-white
+    font-semibold
+
+    hover:scale-[1.02]
+
+    transition-all
+    "
+  >
+    View Details
+  </button>
+</div>
         ))}
       </div>
 
-      {/* MODAL */}
       {editSociety && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-3">
-          <div className="bg-white p-5 rounded-2xl w-full max-w-md relative shadow-xl">
+  <div
+    className="
+    fixed inset-0
 
-            <button
-              className="absolute top-3 right-3"
-              onClick={() => setEditSociety(null)}
-            >
-              <X size={18} />
-            </button>
+    bg-black/60
+    backdrop-blur-md
 
-            <h2 className="text-xl font-bold mb-4 text-indigo-600">
-              Update Society
-            </h2>
+    flex items-center justify-center
 
-            <input
-              className="w-full border p-2 mb-2 rounded focus:ring-2 focus:ring-indigo-400 outline-none"
-              placeholder="Society Name"
-              value={editSociety.name}
-              onChange={(e) =>
-                setEditSociety({ ...editSociety, name: e.target.value })
-              }
-            />
+    z-50
+    px-4
+    "
+  >
+    <div
+      className="
+      bg-white
 
-            <input
-              className="w-full border p-2 mb-2 rounded focus:ring-2 focus:ring-indigo-400 outline-none"
-              placeholder="City"
-              value={editSociety.city}
-              onChange={(e) =>
-                setEditSociety({ ...editSociety, city: e.target.value })
-              }
-            />
+      w-full max-w-lg
 
-            <textarea
-              className="w-full border p-2 mb-4 rounded focus:ring-2 focus:ring-indigo-400 outline-none"
-              placeholder="Address"
-              value={editSociety.address}
-              onChange={(e) =>
-                setEditSociety({ ...editSociety, address: e.target.value })
-              }
-            />
+      rounded-3xl
 
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setEditSociety(null)}
-                className="px-4 py-2 bg-gray-200 rounded"
-              >
-                Cancel
-              </button>
+      overflow-hidden
 
-              <button
-                onClick={handleUpdate}
-                className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded"
-              >
-                Update
-              </button>
-            </div>
-          </div>
+      shadow-[0_25px_80px_rgba(0,0,0,0.25)]
+      "
+    >
+      {/* Header */}
+      <div
+        className="
+        bg-gradient-to-r
+        from-cyan-600
+        to-blue-700
+
+        px-6 py-5
+
+        text-white
+
+        flex items-center justify-between
+        "
+      >
+        <h2 className="text-xl font-bold">
+          Update Society
+        </h2>
+
+        <button
+          onClick={() =>
+            setEditSociety(null)
+          }
+          className="
+          h-10 w-10
+
+          rounded-xl
+
+          bg-white/10
+
+          flex items-center justify-center
+
+          hover:bg-white/20
+          "
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Form */}
+      <div className="p-6">
+
+        <div className="space-y-4">
+
+          <input
+            className="
+            w-full
+
+            px-4 py-3
+
+            rounded-xl
+
+            border border-slate-200
+
+            focus:ring-2
+            focus:ring-cyan-500
+            outline-none
+            "
+            placeholder="Society Name"
+            value={editSociety.name}
+            onChange={(e) =>
+              setEditSociety({
+                ...editSociety,
+                name: e.target.value,
+              })
+            }
+          />
+
+          <input
+            className="
+            w-full
+
+            px-4 py-3
+
+            rounded-xl
+
+            border border-slate-200
+
+            focus:ring-2
+            focus:ring-cyan-500
+            outline-none
+            "
+            placeholder="City"
+            value={editSociety.city}
+            onChange={(e) =>
+              setEditSociety({
+                ...editSociety,
+                city: e.target.value,
+              })
+            }
+          />
+
+          <textarea
+            rows={4}
+            className="
+            w-full
+
+            px-4 py-3
+
+            rounded-xl
+
+            border border-slate-200
+
+            focus:ring-2
+            focus:ring-cyan-500
+            outline-none
+            "
+            placeholder="Address"
+            value={editSociety.address}
+            onChange={(e) =>
+              setEditSociety({
+                ...editSociety,
+                address: e.target.value,
+              })
+            }
+          />
         </div>
-      )}
+
+        <div className="flex justify-end gap-3 mt-6">
+
+          <button
+            onClick={() =>
+              setEditSociety(null)
+            }
+            className="
+            px-5 py-3
+
+            rounded-xl
+
+            bg-slate-100
+            hover:bg-slate-200
+
+            font-medium
+            "
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={handleUpdate}
+            className="
+            px-5 py-3
+
+            rounded-xl
+
+            bg-gradient-to-r
+            from-cyan-500
+            to-blue-600
+
+            text-white
+            font-semibold
+            "
+          >
+            Update Society
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

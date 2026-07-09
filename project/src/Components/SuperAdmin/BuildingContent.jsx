@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+import {
+  Building2,
+  Layers3,
+  Home,
+  ArrowLeft,
+} from "lucide-react";
+
 function BuildingContent({ society, onBack }) {
   const [buildings, setBuildings] = useState([]);
   const [inactiveBuildings, setInactiveBuildings] = useState([]);
@@ -66,97 +73,376 @@ function BuildingContent({ society, onBack }) {
     };
 
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [society.id]);
 
   const dataToShow = activeTab === "active" ? buildings : inactiveBuildings;
 
   /* ================= UI ================= */
-  return (
-    <div className="p-4 md:p-6 min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+
+    return (
+  <div
+    className="
+    min-h-screen
+    p-6
+     w-full
+    bg-linear-to-br
+    from-[#eef2ff]
+    via-[#fdf4ff]
+    to-[#ecfeff]
+    lg:-ml-11
+    relative
+    overflow-hidden
+    "
+  >
+    {/* Background Effects */}
+    <div className="absolute top-0 left-0 h-72 w-72 bg-purple-400/20 rounded-full blur-3xl"></div>
+    <div className="absolute top-20 right-0 h-80 w-80 bg-cyan-400/20 rounded-full blur-3xl"></div>
+    <div className="absolute bottom-0 left-1/3 h-96 w-96 bg-pink-400/20 rounded-full blur-3xl"></div>
+
+    <div className="relative z-10">
 
       {/* BACK BUTTON */}
       <button
         onClick={onBack}
-        className="mb-4 px-4 py-2 rounded-full bg-white shadow hover:shadow-md text-indigo-600 font-semibold transition"
+        className="
+        flex items-center gap-2
+         mt-10
+        px-5 py-3
+
+        rounded-2xl
+
+        bg-white/80
+        backdrop-blur-xl
+
+        border border-white
+
+        shadow-lg
+
+        text-violet-600
+        font-semibold
+
+        hover:-translate-y-1
+        hover:shadow-xl
+
+        transition-all
+        "
       >
-        ← Back
+        <ArrowLeft size={18} />
+        Back
       </button>
 
-      {/* SOCIETY HEADER */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-          🏢 {society.name}
-        </h1>
-        <p className="text-gray-500 text-sm md:text-base">
-          📍 {society.address}
-        </p>
+      {/* HEADER */}
+      <div className="mt-8 mb-8">
+
+        <div className="flex items-center gap-5">
+
+          <div
+            className="
+            h-20 w-20
+
+            rounded-3xl
+
+            bg-linear-to-br
+            from-violet-600
+            via-purple-600
+            to-pink-500
+
+            flex items-center justify-center
+
+            text-white
+
+            shadow-xl shadow-purple-500/30
+            "
+          >
+            <Building2 size={40} />
+          </div>
+
+          <div>
+
+            <h1
+              className="
+              text-4xl
+              font-black
+
+              bg-gradient-to-r
+              from-violet-600
+              via-purple-600
+              to-pink-500
+
+              bg-clip-text
+              text-transparent
+              "
+            >
+              {society.name}
+            </h1>
+
+            <p className="text-slate-500 mt-2">
+              📍 {society.address}
+            </p>
+
+          </div>
+
+        </div>
+
       </div>
 
       {/* TABS */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <button
-          onClick={() => setActiveTab("active")}
-          className={`px-4 py-2 rounded-full text-sm md:text-base font-semibold transition
-          ${
-            activeTab === "active"
-              ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow"
-              : "bg-white border hover:bg-gray-100"
-          }`}
-        >
-          Active ({buildings.length})
-        </button>
+      <div className="mb-8">
 
-        <button
-          onClick={() => setActiveTab("inactive")}
-          className={`px-4 py-2 rounded-full text-sm md:text-base font-semibold transition
-          ${
-            activeTab === "inactive"
-              ? "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow"
-              : "bg-white border hover:bg-gray-100"
-          }`}
+        <div
+          className="
+          inline-flex
+
+          p-1.5
+
+          rounded-2xl
+
+          bg-white/70
+          backdrop-blur-xl
+
+          border border-white
+
+          shadow-lg
+          "
         >
-          Inactive ({inactiveBuildings.length})
-        </button>
+
+          <button
+            onClick={() => setActiveTab("active")}
+            className={`
+            px-6 py-3
+            rounded-xl
+
+            font-semibold
+            transition-all
+
+            ${
+              activeTab === "active"
+                ? "bg-gradient-to-r from-violet-600 via-purple-600 to-pink-500 text-white shadow-xl"
+                : "text-slate-700 hover:bg-white"
+            }
+            `}
+          >
+            Active ({buildings.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab("inactive")}
+            className={`
+            px-6 py-3
+            rounded-xl
+
+            font-semibold
+            transition-all
+
+            ${
+              activeTab === "inactive"
+                ? "bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-xl"
+                : "text-slate-700 hover:bg-white"
+            }
+            `}
+          >
+            Inactive ({inactiveBuildings.length})
+          </button>
+
+        </div>
+
       </div>
 
       {/* BUILDINGS */}
       {dataToShow.length === 0 ? (
-        <p className="text-gray-400">No buildings found</p>
+        <div
+          className="
+          bg-white/70
+          backdrop-blur-xl
+
+          rounded-3xl
+
+          p-10
+
+          text-center
+
+          border border-white
+
+          shadow-lg
+          "
+        >
+          <div className="text-6xl mb-4">
+            🏢
+          </div>
+
+          <h3 className="text-xl font-bold text-slate-700">
+            No Buildings Found
+          </h3>
+
+          <p className="text-slate-500 mt-2">
+            No building records available.
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div
+          className="
+          grid
+          grid-cols-1
+          md:grid-cols-2
+          xl:grid-cols-3
+          gap-6
+          "
+        >
           {dataToShow.map((b) => (
             <div
               key={b.id}
-              className="bg-white/80 backdrop-blur p-5 rounded-2xl shadow-md hover:shadow-xl transition"
+              className="
+              group
+              relative
+
+              overflow-hidden
+
+              bg-white/75
+              backdrop-blur-2xl
+
+              border border-white
+
+              rounded-[30px]
+
+              p-6
+
+              shadow-[0_15px_50px_rgba(0,0,0,0.08)]
+
+              hover:-translate-y-3
+              hover:shadow-[0_25px_70px_rgba(124,58,237,0.20)]
+
+              transition-all duration-500
+              "
             >
-              <h3 className="text-lg font-bold text-indigo-600">
-                🏢 {b.name}
+
+              {/* Top Line */}
+              <div
+                className="
+                absolute top-0 left-0
+
+                h-1.5 w-full
+
+                bg-gradient-to-r
+                from-violet-500
+                via-pink-500
+                to-cyan-500
+                "
+              />
+
+              {/* Building Icon */}
+              <div
+                className="
+                h-16 w-16
+
+                rounded-2xl
+
+                bg-gradient-to-br
+                from-violet-600
+                via-purple-600
+                to-pink-500
+
+                flex items-center justify-center
+
+                text-white
+
+                shadow-lg shadow-purple-500/30
+
+                group-hover:scale-110
+
+                transition-all duration-500
+                "
+              >
+                <Building2 size={28} />
+              </div>
+
+              <h3
+                className="
+                mt-5
+
+                text-2xl
+                font-bold
+
+                bg-gradient-to-r
+                from-violet-700
+                to-pink-600
+
+                bg-clip-text
+                text-transparent
+                "
+              >
+                {b.name}
               </h3>
 
-              {/* STATS */}
-              <div className="flex gap-3 mt-4 flex-wrap">
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-4 mt-6">
 
-                <div className="flex-1 min-w-[120px] bg-indigo-50 rounded-lg p-3 text-center">
-                  <p className="text-xs text-gray-500">Floors</p>
-                  <p className="text-lg font-bold text-indigo-600">
+                <div
+                  className="
+                  rounded-2xl
+
+                  p-4
+
+                  bg-gradient-to-br
+                  from-indigo-50
+                  to-violet-100
+
+                  border border-indigo-100
+                  "
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Layers3
+                      size={16}
+                      className="text-violet-600"
+                    />
+                    <span className="text-xs text-slate-500">
+                      Floors
+                    </span>
+                  </div>
+
+                  <p className="text-3xl font-bold text-violet-600">
                     {floorsMap[b.id]?.total ?? 0}
                   </p>
                 </div>
 
-                <div className="flex-1 min-w-[120px] bg-purple-50 rounded-lg p-3 text-center">
-                  <p className="text-xs text-gray-500">Flats</p>
-                  <p className="text-lg font-bold text-purple-600">
+                <div
+                  className="
+                  rounded-2xl
+
+                  p-4
+
+                  bg-gradient-to-br
+                  from-cyan-50
+                  to-blue-100
+
+                  border border-cyan-100
+                  "
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Home
+                      size={16}
+                      className="text-cyan-600"
+                    />
+                    <span className="text-xs text-slate-500">
+                      Flats
+                    </span>
+                  </div>
+
+                  <p className="text-3xl font-bold text-cyan-600">
                     {flatsMap[b.id] ?? 0}
                   </p>
                 </div>
 
               </div>
+
             </div>
           ))}
         </div>
       )}
+
     </div>
-  );
+  </div>
+);
 }
 
 export default BuildingContent;
